@@ -1,0 +1,14 @@
+Main Page
+##Reactions
+#Can see the existing reactions and there is
+#Add reaction button
+	#gives options to
+		-add reactants
+		-reaction conditions
+		-products
+	there is a save button on top to save the reaction
+	-once the reaction is saved, it should be added to the list of reactions in the database
+	history button
+#simulate button(redirects to simulate page in the home page)
+
+##Simulate
