@@ -1,0 +1,11 @@
+<?xml version="1.0" enconding="UTF-8">
+<interface>
+<requires lib="gtk" version="4.0"/>
+<object id="welcome_screen_window" class="ApplicationWindow">
+    <child>
+        <object class="Label">
+        <property name="label">"Welcome to Chemistry assistant!"</property>
+        </object>
+    </child>
+</object>
+<interface/>
