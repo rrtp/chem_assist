@@ -18,11 +18,39 @@ class Application(Gtk.Application):
         self.connect('activate',self.on_activate)
     def on_activate(self,app):
         print("activated")
+        win=welcome_window(application=app)
+        win.present()
+        print(win.get_css_name())
 
-#define the ui file name, create gtk builder instance
-ui_file_path=ui_dir+"interface.ui"
-gtk_builder=Gtk.Builder.new_from_file(ui_file_path)
-print(gtk_builder.get_objects())
+
+class welcome_window(Gtk.ApplicationWindow):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+
+        self.set_css_name("welcome_window")
+        self.set_title("Welcome!")
+
+        #create welcome text
+        welcome_text=Gtk.Label.new("Welcome to Chemistry Assistant!")
+        self.set_child(welcome_text)
+
+class main_menu_window(Gtk.ApplicationWindow):
+    def __init__():
+        super().init()
+
+        self.set_title("Chemistry assistant main page")
+
+        #buttons
+        reactions_button=Gtk.Button.new_with_label("Reactions")
+        self.set_child(reactions_button)
+        quiz_button=Gtk.Button.new_with_label("Quiz")
+        self.set_child(quiz_button)
+
+        #main menu buttons box
+        main_menu_buttons_box=Gtk.Box.new(Gtk.orientation.VERTICAL,0)
+        main_menu_buttons_box.append(reactions_button)
+        main_menu_buttons_box.append(quiz_button)
+        self.set_child(main_menu_buttons_box)
 
 #Create an instance of Application
 app=Application()
