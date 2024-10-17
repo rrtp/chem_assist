@@ -35,7 +35,7 @@ class ExampleWindow(Gtk.ApplicationWindow):
         self._create_column_view()
 
         # Create a smaller button to add new entries
-        add_button = Gtk.Button(label="Add")
+        add_button = Gtk.Button(label="Add columns")
         add_button.set_size_request(80, 30)  # Set button size
         add_button.connect("clicked", self.on_add_entry)
 
