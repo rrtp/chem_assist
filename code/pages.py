@@ -68,9 +68,9 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #box for reactions list
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         self.set_child(reactions_list_box)
-        #add list to box   
         reactions_list=Gtk.ColumnView.new(Gtk.SelectionModel.MultiSelection)
         reactions_list_box.append(reactions_list)
+        
         #Columns for gtk list
         reaction_list_name_column=Gtk.ColumnViewColumn.new("Name",Gtk.ListItemFactory())
         reaction_lists.append_column()

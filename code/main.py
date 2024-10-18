@@ -17,6 +17,8 @@ css_provider.load_from_path(css_file_path)
 class Application(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
+
+        menu_bar=Gtk.MenuModel.new("Actions",)
         self.connect('activate',self.on_activate)
     def on_activate(self,app):
         print("activated")
