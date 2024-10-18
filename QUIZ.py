@@ -55,7 +55,7 @@ class QuizApp(Gtk.Window):
         self.load_question()
 
 if __name__ == "__main__":
-    app = QuizApp()
+    app = HELLO QUIZ()
     app.connect("destroy", Gtk.main_quit)
     app.show()
     Gtk.main()
