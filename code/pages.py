@@ -2,57 +2,29 @@ import gi
 gi.require_version("Gtk","4.0")
 from gi.repository import Gtk
 
-#folder for Css, user interface layout definition,database,pictures
-css_dir="styles/"
-ui_dir="ui_definitions/"
-db_dir="databases/"
-pics_dir="pictures/"
-
-#load css
-css_file_path=css_dir+"styles.css"
-css_provider=Gtk.CssProvider.new()
-css_provider.load_from_path(css_file_path)
-#load db
-current_db=db_dir+""
-
-#number of windows of history to remember
-window_history_limit=100
-#window history
-window_history=[]
-def window_history_delete_old():
-    del window_history[0]
-if len(window_history) > window_history_limit:
-    window_history_delete_old()
-
-#close current page
-def close_page_cls(obj,app):
-    print("exiting..")
-    app.get_active_window().close()
-    if len(window_history)>0:
-        window_history.pop()
-def close_page(app):
-    print("closing current page..")
-    if len(window_history)>0:
-        window_history.pop()
-    app.get_active_window().close()
-#open  page
-def open_page(obj,page,app):
-    close_page(app)
-    window_history.append(page)
-    win=page(application=app)
-    win.present()
+#setting window names
+page_names={}
+page_names["main_menu_page"]="main_menu_page"
 
 #header bar
 class header_bar(Gtk.HeaderBar):
+    #buttons
+    back_button=Gtk.Button.new_with_label("b")
+    settings_button=Gtk.Button.new_with_label("s")
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        #buttons
-        back_button=Gtk.Button.new_with_label("b")
-        settings_page_button=Gtk.Button.new_with_label("s")
         #populate
-        self.pack_start(back_button)
-        self.pack_end(settings_page_button)
+        self.pack_start(self.back_button)
 
+def set_titlebar(page,titlebar=header_bar,settings=True,back_button=True):
+    page.set_titlebar(titlebar())
+    if settings==True:
+        #set settings button and connect to settings page
+        page.props.titlebar.settings_button=Gtk.Button.new_with_label("s")
+        page.props.titlebar.settings_button.connect('clicked',page.props.application.open_page,settings_page)
+        page.props.titlebar.pack_end(page.props.titlebar.settings_button)
+    if back_button==True:
+        pass
 #welcome page
 class welcome_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
@@ -63,7 +35,7 @@ class welcome_page(Gtk.ApplicationWindow):
         self.set_child(welcome_button)
 
         #button function
-        welcome_button.connect('clicked',open_page,main_menu_page,self.get_application())
+        welcome_button.connect('clicked',self.props.application.open_page,main_menu_page)
 
 #settings page
 class settings_page(Gtk.ApplicationWindow):
@@ -76,7 +48,7 @@ class main_menu_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Chemistry assistant main page")
         self.application=self.get_application()
-
+        self.props.name=page_names["main_menu_page"]
         #buttons
         reactions_button=Gtk.Button.new_with_label("Reactions")
         quiz_button=Gtk.Button.new_with_label("Quiz")
@@ -95,10 +67,10 @@ class main_menu_page(Gtk.ApplicationWindow):
         self.set_child(main_menu_buttons_box)
 
         #button functions
-        reactions_button.connect('clicked',open_page,reactions_display_page,self.application)
-        quiz_button.connect('clicked',open_page,quiz_main_page,self.application)
-        quit_button.connect('clicked',close_page_cls,self.application)
-        simulator_button.connect('clicked',open_page,simulator_page,self.application)
+        reactions_button.connect('clicked',self.application.open_page,reactions_display_page)
+        quiz_button.connect('clicked',self.application.open_page,quiz_main_page)
+        quit_button.connect('clicked',self.application.close_page)
+        simulator_button.connect('clicked',self.application.open_page,simulator_page)
 
 #quiz page
 class quiz_main_page(Gtk.ApplicationWindow):
@@ -111,7 +83,9 @@ class reactions_display_page(Gtk.ApplicationWindow):
         super().__init__(*args,**kwargs,title="Reactions")
 
         reactions_page_header_bar=header_bar()
+        reactions_page_header_bar.settings_button.connect('clicked',self.props.application.open_page,settings_page)
         self.set_titlebar(reactions_page_header_bar)
+
         #boxes
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
