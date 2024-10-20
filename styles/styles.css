@@ -1,3 +1,9 @@
-#window{
+#main_menu_page{
 background-color:#6b3535;
+}
+button{
+    background-color: yellow;
+    border-width: 5px;
+    border-color:green;
+    border-radius:100px;
 }
