@@ -33,7 +33,7 @@ class Quiz(Gtk.Window):
     def load_questions(self):
         connection = sqlite3.connect('DATABASEname')
         cursor = connection.cursor()
-        cursor.execute("SELECT question, option1, option2, option3, option4, answer FROM questions")
+        cursor.execute("SELECT question, option1, option2, option3, option4, answer FROM table_name")
         questions = cursor.fetchall()
         connection.close()
         return questions
