@@ -1,9 +1,36 @@
-#main_menu_page{
-background-color:#6b3535;
+window{
+    background-color: rgba(110, 66, 172, 0.916);
 }
+
+#main_menu_page{
+    background-color: rgba(68, 77, 177, 0.716);
+}
+
+headerbar{
+    background:rgba(157, 92, 35, 0);
+    color:aliceblue;
+    border:none;
+}
+
 button{
-    background-color: yellow;
-    border-width: 5px;
-    border-color:green;
-    border-radius:100px;
+    border-radius:50px;
+    border:none;
+    background: rgb(88, 151, 118);
+}
+
+button.main_menu_buttons_box{
+    padding-left:100px;
+    padding-right: 100px;
+    padding-top: 10px;
+    padding-bottom:10px;
+    font-size:xx-large;
+    background: #2a6651c5;
+    color:aliceblue;
+}
+button:hover{
+    background:#ac4343;
+}
+label{
+    font-size:50px;
+    color:black;
 }
