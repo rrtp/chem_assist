@@ -1,9 +1,9 @@
-import gi,sqlite3
+import gi,sqlite3,os
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk,Gdk
+from gi.repository import Gtk,Gdk,GObject
 import pages
 
-#uncomment to set dark theme
+#uncomment to set dark theme for the application
 #Gtk.Settings.get_default().set_property('gtk_application_prefer_dark_theme',True)
 
 #folder for Css, user interface layout definition,database,pictures
@@ -19,11 +19,9 @@ image_paths={
     "app":pics_dir+"app_image.svg"
 }
 
-#css file path
-css_file_path=css_dir+"styles.css"
 
-#db path
-current_db=db_dir+""
+#database file path
+current_db=""
 
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
@@ -33,25 +31,42 @@ class Application(Gtk.Application):
 
     #default display
     default_display=Gdk.Display.get_default()
-    primary_monitor=default_display.get_monitors()[0]
-    monitor_geometry=primary_monitor.get_geometry()
-    monitor_width=monitor_geometry.width
-    monitor_height=monitor_geometry.height
+
+    #css file
+    css_file_path=css_dir+"styles.css"
+    css_provider=Gtk.CssProvider.new()
 
     #images
     settings_image=Gtk.Image.new_from_resource(image_paths["settings"])
     back_image=Gtk.Image.new_from_resource(image_paths["back"])
     app_image=Gtk.Image.new_from_resource(image_paths["app"])
-
+    
     #constructor
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
+        #load css file
+        self.css_provider.load_from_path(self.css_file_path)
+    
         self.connect('activate',self.on_activate)
-        self.add_styles()
     def on_activate(self,app):
         print("activated")
+        #get monitor dimentions
+        self.primary_monitor=self.default_display.get_monitors()[0]
+        self.get_monitor_dimentions(self.primary_monitor)
+        #add styles to context
+        self.add_styles_from_provider(self.css_provider)        
+        #open welcome page
         self.open_page(None,pages.welcome_page)
-    
+
+    #get monitor dimentions
+    def get_monitor_dimentions(self,monitor):
+        monitor_geometry=monitor.get_geometry()
+        self.monitor_width=monitor_geometry.width
+        self.monitor_height=monitor_geometry.height
+    #load styles to context
+    def add_styles_from_provider(self,css_provider):
+        Gtk.StyleContext.add_provider_for_display(self.default_display,css_provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
     #close current page
     def close_page(self,caller_obj=None,page=None):
         print("closing current page..",self.window_history)
@@ -74,12 +89,14 @@ class Application(Gtk.Application):
         page=page(application=app)
         page.set_default_size(app.monitor_width/2,app.monitor_height/2)
         page.present()
-    
-    def add_styles(self):
-        #load css
-        css_provider=Gtk.CssProvider.new()
-        css_provider.load_from_path(css_file_path)
-        Gtk.StyleContext.add_provider_for_display(self.default_display,css_provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    def initialise_db(db_path):
+        #please take backup of database before connecting with path as it may be deleted by this function
+        database_object=sqlite3.connect(db_path)
+        db_cursor=database_object.cursor()
+        return db_cursor
+    def get_data_from_db(db_cursor):
+        db_cursor.execute('SELECT * FROM REACTIONS')
 
 #Create an instance of Application
 app=Application()
