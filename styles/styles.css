@@ -1,11 +1,13 @@
 window{
-    background-color: rgba(110, 66, 172, 0.916);
+    background-color: rgba(110, 66, 172, 0.883);
 }
 
 #main_menu_page{
     background-color: rgba(68, 77, 177, 0.716);
 }
-
+box{
+    border-color:black;
+}
 headerbar{
     background:rgba(157, 92, 35, 0);
     color:aliceblue;
@@ -31,6 +33,5 @@ button:hover{
     background:#ac4343;
 }
 label{
-    font-size:50px;
-    color:black;
+    color:rgba(0, 0, 0, 0.61);
 }
