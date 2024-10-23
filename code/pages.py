@@ -1,6 +1,6 @@
 import gi
 gi.require_version("Gtk","4.0")
-from gi.repository import Gtk
+from gi.repository import Gtk,Gio,GObject
 
 #header bar
 def set_css_class_to_child(parent,css_class):
@@ -34,17 +34,28 @@ class header_bar(Gtk.HeaderBar):
 class welcome_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="welcome!")
-        #create welcome text
-        welcome_message=Gtk.Label(label="Welcome to Chemistry Assistant!")
+        #event controller
+        event_controller=Gtk.EventControllerKey()
+        self.add_controller(event_controller)
+        #welcome message
+        welcome_message=Gtk.Label.new()
         self.set_child(welcome_message)
-        #button function
-        #welcome_button.connect('clicked',self.props.application.open_page,main_menu_page)
-
+        welcome_message.set_markup(\
+            """<span font-size='50pt'>Welcome to Chemistry assistant!</span>
+            <span>\n\n\n\n\n\n\n</span>
+            <span font-size="20pt">Press any key to start!</span>""")
+        #event controller function
+        event_controller.connect('key-pressed',self.do_key_pressed)
+    def do_key_pressed(self,*args):
+        for i in args:
+            print(i)
+        print("key pressed")
+        self.props.application.open_page(None,main_menu_page)
 #settings page
 class settings_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="settings")
-        header_bar.set_titlebar(header_bar,self)
+        header_bar.set_titlebar(header_bar,self,settings=False)
 #main menu page
 class main_menu_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
@@ -83,6 +94,13 @@ class quiz_main_page(Gtk.ApplicationWindow):
         super().__init__(*args,**kwargs,title="Quiz main page")
         header_bar.set_titlebar(header_bar,self)
 
+class reactions_list(GObject.Object):
+    def __init__(self,name,reactant,product,extra_info):
+        super().__init__()
+        self.name=name
+        self.reactant=reactant
+        self.product=product
+        self.extra_info=extra_info
 #Reactions page
 class reactions_display_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
@@ -90,20 +108,37 @@ class reactions_display_page(Gtk.ApplicationWindow):
 
         header_bar.set_titlebar(header_bar,self)
         #boxes
+        reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        reactions_page_box.set_homogeneous(True)
+        self.set_child(reactions_page_box)
+
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
-        self.set_child(reactions_list_box)
-        self.set_child(reactions_page_bottom_panel_box)
+
+        reactions_page_box.append(reactions_list_box)
+        reactions_page_box.append(reactions_page_bottom_panel_box)
 
         #box properties
         reactions_page_bottom_panel_box.set_valign(Gtk.Align.END)
         reactions_page_bottom_panel_box.set_halign(Gtk.Align.END)
 
+        #list panel
+        #model
+        self.reactions_list=Gio.ListStore.new(reactions_list)
+        self.reactions_list_multiselection=Gtk.MultiSelection.new(self.reactions_list)
+
         #columns
-        # reactions_list=Gtk.ColumnView.new()
-        # reactions_list_box.append(reactions_list)
-        # reaction_list_name_column=Gtk.ColumnViewColumn.new("Name",Gtk.ListItemFactory())
-        # reaction_lists.append_column()
+        name_column_signal_tracker=Gtk.SignalListItemFactory.new()
+        name_column=Gtk.ColumnViewColumn.new("name",name_column_signal_tracker)
+
+        reactants_column_signal_tracker=Gtk.SignalListItemFactory.new()
+        reactants_column=Gtk.ColumnViewColumn.new("name",reactants_column_signal_tracker)
+
+        products_column_signal_tracker=Gtk.SignalListItemFactory.new()
+        products_column=Gtk.ColumnViewColumn.new("name",products_column_signal_tracker)
+
+        extra_info_column_signal_tracker=Gtk.SignalListItemFactory.new()
+        extra_info_column=Gtk.ColumnViewColumn.new("name",extra_info_column_signal_tracker)
 
         #bottom panel
         reactions_db_import_button=Gtk.Button.new_with_label("Import")
@@ -112,9 +147,8 @@ class reactions_display_page(Gtk.ApplicationWindow):
 
         reactions_page_bottom_panel_box.append(reactions_db_import_button)
         reactions_page_bottom_panel_box.append(reactions_db_export_button)
-        reactions_page_bottom_panel_box.append(reactions_db_add_button)
+        reactions_page_bottom_panel_box.append(reactions_db_add_button)   
 
-#simulator page
 class simulator_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Simulator")
