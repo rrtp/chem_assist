@@ -1,0 +1,50 @@
+/* styles/styles.css */
+
+/* General button styling */
+button {
+    background-color: #4CAF50; /* Green background */
+    color: black;              /* Black text */
+    border: 2px solid black;     /* Solid red border for buttons  */
+    padding: 10px 20px;        /* Padding around the text */
+    text-align: center;        /* Center text */
+    text-decoration: overline;      /* No underline */
+    display: inline-block;     /* Inline-block for layout */
+    font-size: 16px;           /* Font size */
+    margin: 4px 2px;          /* Margin around buttons */
+    cursor: pointer;           /* Pointer cursor on hover */
+    border-radius: 15px;       /* Rounded corners */
+    transition: background-color 0.3s, box-shadow 0.3s; /* Transition effect */
+    font-family: 'Courier New', sans-serif; /* Sets a specific font */
+    box-shadow: 6px 8px rgba(0, 0, 0, 0.2); /* Adds a shadow for depth */
+}
+
+/* Button hover effect */
+button:hover {
+    background-color:red; /* Darker green on hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Darker shadow on hover */
+}
+
+/* Button active state */
+button:active {
+    background-color: #388E3C; /* Even darker green when clicked */
+    transform: translateY(1px); /* Slightly moves the button down */
+}
+
+/* Button disabled state */
+button:disabled {
+    background-color:gray; /* Greyed out color */
+    color: #FFFFFF; /* White text for disabled state */
+    cursor: not-allowed; /* Changes cursor to indicate disabled state */
+}
+
+.reactions-button {
+    background-color: #007BFF; /* Blue for reactions button */
+}
+
+.quiz-button {
+    background-color: #FFC107; /* Yellow for quiz button */
+}
+
+.quit-button {
+    background-color: #DC3545; /* Red for quit button */
+}
