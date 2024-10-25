@@ -1,10 +1,7 @@
-import gi,sqlite3,os
+import gi,mysql,os,pickle
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk,Gdk,GObject
+from gi.repository import Gtk,Gdk,Gio,GLib
 import pages
-
-#uncomment to set dark theme for the application
-#Gtk.Settings.get_default().set_property('gtk_application_prefer_dark_theme',True)
 
 #folder for Css, user interface layout definition,database,pictures
 css_dir="styles/"
@@ -19,10 +16,6 @@ image_paths={
     "app":pics_dir+"app_image.svg"
 }
 
-
-#database file path
-current_db=""
-
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
     #window history
@@ -36,27 +29,77 @@ class Application(Gtk.Application):
     css_file_path=css_dir+"styles.css"
     css_provider=Gtk.CssProvider.new()
 
+    #database file path
+    current_db=db_dir+"test.db"
+
+    #config file
+    users_file_path="users.conf"
+
     #images
     settings_image=Gtk.Image.new_from_resource(image_paths["settings"])
     back_image=Gtk.Image.new_from_resource(image_paths["back"])
     app_image=Gtk.Image.new_from_resource(image_paths["app"])
+
+    #users
+    users_file=open(users_file_path,"wb+")
+    users={}
+    current_user=None
     
     #constructor
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
-        #load css file
-        self.css_provider.load_from_path(self.css_file_path)
-    
         self.connect('activate',self.on_activate)
+
+    #on activate app
     def on_activate(self,app):
         print("activated")
         #get monitor dimentions
         self.primary_monitor=self.default_display.get_monitors()[0]
         self.get_monitor_dimentions(self.primary_monitor)
-        #add styles to context
-        self.add_styles_from_provider(self.css_provider)        
+        #load css file
+        self.css_provider.load_from_path(self.css_file_path)
+        self.add_styles_from_provider(self.css_provider)
+        #load users data from file
+        self.load_users_data_from_file(self.users_file)
+
+        #define actions   
+        quit_action=Gio.SimpleAction.new("quit",None)
+        quit_action.connect('activate',self.close_page)
+        self.add_action(quit_action)
+
+        open_reactions_page_action=Gio.SimpleAction.new("open_reactions_page",None)
+        open_reactions_page_action.connect('activate',self.on_open_reactions_page)
+        self.add_action(open_reactions_page_action)
+
+        self.current_user=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
+        self.add_action(self.current_user)
         #open welcome page
         self.open_page(None,pages.welcome_page)
+
+    #user setup
+    def add_users_to_file(self,user_dict):
+        print(pickle.dump(user_dict,self.users_file))
+        self.check_users_data(self.users_file)
+    def check_users_data(self,users_file):
+        try:
+            if pickle.load(self.users_file):
+                return True
+        except EOFError:
+            print("No data in users.conf file")
+            return False
+    def load_users_data_from_file(self,users_file):
+        data_present=self.check_users_data(users_file)
+        if data_present:
+            self.users=pickle.load(users_file)
+    def setup_user(self):
+        self.open_page(None,pages.login_page)
+
+    #reactions page open
+    def on_open_reactions_page(self,caller_obj,arg3):
+            if self.current_user == None:
+                self.setup_user()
+                print("setting up")
+            #self.open_page(None,pages.reactions_display_page)
 
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
@@ -90,13 +133,18 @@ class Application(Gtk.Application):
         page.set_default_size(app.monitor_width/2,app.monitor_height/2)
         page.present()
 
-    def initialise_db(db_path):
+    def connect_to_db(self,db_path,populate=False):
         #please take backup of database before connecting with path as it may be deleted by this function
-        database_object=sqlite3.connect(db_path)
-        db_cursor=database_object.cursor()
-        return db_cursor
-    def get_data_from_db(db_cursor):
-        db_cursor.execute('SELECT * FROM REACTIONS')
+        database_object=mysql.connector.connect(database=db_path)
+        self.db_cursor=database_object.cursor()
+        if populate==True:
+            self.populate_db(db_cursor)
+    def populate_db(self,db_cursor):
+        db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer,varchar)')
+        db_cursor.execute('CREATE TABLE reactions(name varchar,reactant varchat,product varchar,extra_info varchar)')
+    def get_data_from_db(self,table_name,db_cursor):
+        db_data=db_cursor.execute(f'SELECT * FROM {table_name}')
+        return db_data
 
 #Create an instance of Application
 app=Application()
