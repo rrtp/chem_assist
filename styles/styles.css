@@ -1,5 +1,5 @@
 window{
-    background-color: rgba(110, 66, 172, 0.883);
+    background-color: rgba(160, 53, 24, 0.98);
 }
 
 #main_menu_page{
@@ -14,12 +14,18 @@ headerbar{
     border:none;
 }
 
-button{
+button {
     border-radius:50px;
     border:none;
-    background: rgb(88, 151, 118);
+    background: rgba(30, 115, 9, 0.92);
 }
-
+button.headerbar{
+    background: rgba(22, 148, 22, 0);
+}
+button.settings_categories_box{
+    border-radius: 5px;
+    margin:5px;
+}
 button.main_menu_buttons_box{
     padding-left:100px;
     padding-right: 100px;
@@ -29,9 +35,18 @@ button.main_menu_buttons_box{
     background: #2a6651c5;
     color:aliceblue;
 }
+
 button:hover{
-    background:#ac4343;
+    background:#25c52d6c;
 }
 label{
     color:rgba(0, 0, 0, 0.61);
+}
+entry{
+    background: rgba(18, 208, 255, 0.275);
+    border:None;
+    border-radius: 10px;
+    padding-right:150px;
+    padding-top:5px;
+    padding-bottom: 5px;
 }
