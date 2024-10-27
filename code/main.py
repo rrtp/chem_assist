@@ -1,4 +1,4 @@
-import gi,mysql,os,pickle
+import gi,mysql,os
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk,Gdk,Gio,GLib
 import pages
@@ -34,17 +34,15 @@ class Application(Gtk.Application):
 
     #config file
     users_file_path="users.conf"
+    #users
+    current_user=""
+    users={}
 
     #images
     settings_image=Gtk.Image.new_from_resource(image_paths["settings"])
     back_image=Gtk.Image.new_from_resource(image_paths["back"])
     app_image=Gtk.Image.new_from_resource(image_paths["app"])
 
-    #users
-    users_file=open(users_file_path,"wb+")
-    users={}
-    current_user=None
-    
     #constructor
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
@@ -59,8 +57,6 @@ class Application(Gtk.Application):
         #load css file
         self.css_provider.load_from_path(self.css_file_path)
         self.add_styles_from_provider(self.css_provider)
-        #load users data from file
-        self.load_users_data_from_file(self.users_file)
 
         #define actions   
         quit_action=Gio.SimpleAction.new("quit",None)
@@ -71,35 +67,58 @@ class Application(Gtk.Application):
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
 
-        self.current_user=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
-        self.add_action(self.current_user)
+        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
+        self.add_action(self.current_user_action)
+
         #open welcome page
         self.open_page(None,pages.welcome_page)
-
-    #user setup
-    def add_users_to_file(self,user_dict):
-        print(pickle.dump(user_dict,self.users_file))
-        self.check_users_data(self.users_file)
-    def check_users_data(self,users_file):
-        try:
-            if pickle.load(self.users_file):
-                return True
-        except EOFError:
-            print("No data in users.conf file")
-            return False
-    def load_users_data_from_file(self,users_file):
-        data_present=self.check_users_data(users_file)
-        if data_present:
-            self.users=pickle.load(users_file)
-    def setup_user(self):
-        self.open_page(None,pages.login_page)
 
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
             if self.current_user == None:
                 self.setup_user()
                 print("setting up")
-            #self.open_page(None,pages.reactions_display_page)
+
+            elif self.current_user!=None:
+                self.open_page(None,pages.reactions_display_page)
+
+    def get_users(self,users_file_path=users_file_path):
+        #users file has user name and password seperated by 1 space
+        users_file=open(users_file_path,"r")
+        users_file_lines=users_file.readlines()
+        users={}
+        if len(users_file_lines)==0:
+            print("no user details in users file")
+            return users
+        for user_details in users_file_lines:
+            user_credentials=user_details.partition(" ")
+            #add username and password to users dictionary
+            if user_credentials[2][-1]!="\n":
+                users[user_credentials[0]]=user_credentials[2]
+                continue
+            users[user_credentials[0]]=user_credentials[2][:-2]
+        users_file.close()
+        return self.users.update(users)
+
+    def add_user_to_users_file(self,user_name,users_file_path=users_file_path):
+        users_file=open(users_file_path,"w")
+        write_str=""
+        for user_name in self.users.keys():
+            #write username and password
+            write_str=write_str+user_name+" "+self.users[user_name]+"\n"
+        write_str=write_str[:-2]
+        users_file.seek(0)
+        users_file.write(write_str)
+        #close file
+        users_file.close()
+    def update_users_file(self,users_file_path=users_file_path):
+        users_file=open(users_file_path,"w+")
+        write_str=""
+        for user_name in self.users.keys():
+            write_str=write_str+user_name+" "+self.users[user_name]+"\n"
+        write_str=write_str[:-2]
+        users_file.write(write_str)
+        users_file.close()
 
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
@@ -112,7 +131,6 @@ class Application(Gtk.Application):
 
     #close current page
     def close_page(self,caller_obj=None,page=None):
-        print("closing current page..",self.window_history)
         if page!=None:
             page.close()
         if page==None and self.get_active_window()!=None:
@@ -140,7 +158,7 @@ class Application(Gtk.Application):
         if populate==True:
             self.populate_db(db_cursor)
     def populate_db(self,db_cursor):
-        db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer,varchar)')
+        db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer varchar,extra_info varchar)')
         db_cursor.execute('CREATE TABLE reactions(name varchar,reactant varchat,product varchar,extra_info varchar)')
     def get_data_from_db(self,table_name,db_cursor):
         db_data=db_cursor.execute(f'SELECT * FROM {table_name}')
