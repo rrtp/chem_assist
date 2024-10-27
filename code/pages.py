@@ -61,6 +61,7 @@ class welcome_page(Gtk.ApplicationWindow):
 #settings page
 class settings_page(Gtk.ApplicationWindow):
     open_users_page=False
+
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="settings")
         header_bar.set_titlebar(header_bar,self,settings=False)
@@ -92,9 +93,23 @@ class settings_page(Gtk.ApplicationWindow):
         users_settings_button.connect('clicked',self.users_display)
         db_settings_button.connect('clicked',self.db_settings_display)
 
+        #actions
+        user_button_activate_action=Gio.SimpleAction.new_stateful("current_user_button",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
+        user_button_activate_action.connect('activate',self.on_activate_users_button)
+        user_button_activate_action.connect('change_state',self.on_user_button_action_state_change)
+        self.add_action(user_button_activate_action)
+
         if self.open_users_page==True:
             self.users_display(None)
             self.open_users_page=False
+        
+    def on_user_button_action_state_change(*args):
+        print("state changed",args)
+    def on_activate_users_button(self,caller_action,parameter):
+        caller_action.set_state(parameter)
+        self.props.application.current_user_action.set_state(caller_action.props.state)
+        self.update_current_user_message(self.messages_box)
+
     def appearance_display(self,caller_obj):
         self.reload()
         label=Gtk.Label.new("Appearance settings")
@@ -128,34 +143,36 @@ class settings_page(Gtk.ApplicationWindow):
         users_buttons_scroller.set_propagate_natural_width(True)
         users_buttons_scroller.set_child(self.users_buttons_box)
 
-        self.button0=Gtk.CheckButton.new()
-        self.users_buttons_box.append(self.button0)
         self.update_users_buttons(users_buttons_scroller)
 
         #operations buttons
         add_user_button=Gtk.Button.new_with_label("Add user")
         remove_user_button=Gtk.Button.new_with_label("Remove current user")
-        #
+        
         user_operations_box.append(remove_user_button)
         user_operations_box.append(add_user_button)
-        #
+        
         add_user_button.connect('clicked',self.open_login_page)
         remove_user_button.connect('clicked',self.remove_current_user,users_buttons_scroller)
 
-    def update_users_buttons(self,container):
-        users_display_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
-        self.users_buttons_box=users_display_box
-        container.set_child(self.users_buttons_box)
-        for user_name,password in self.props.application.users.items():
+    def update_users_buttons(self,scroller):
+        #replace current box
+        self.users_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        scroller.set_child(self.users_buttons_box)
+
+        button0=Gtk.CheckButton.new_with_label("No user")
+        button0.set_action_name('win.current_user_button')
+        button0.set_action_target_value(GLib.Variant.new_string(""))
+        self.users_buttons_box.append(button0)
+        for user_name in self.props.application.users.keys():
             button=Gtk.CheckButton.new_with_label(user_name)
-            button.set_group(self.button0)
+            button.set_group(button0)
+            button.set_action_name('win.current_user_button')
+            button.set_action_target_value(GLib.Variant.new_string(user_name))
             self.users_buttons_box.append(button)
-            button.connect('toggled',self.set_user,user_name)
-        if self.props.application.current_user=="":
-            Gtk.CheckButton.do_activate(self.button0)
         self.update_current_user_message(self.messages_box)
     def remove_current_user(self,caller_obj,users_buttons_scroller):
-        current_user=self.props.application.current_user
+        current_user=self.props.application.current_user_action.props.state.get_string()
         users=self.props.application.users
         if current_user=="":
             print("No current user")
@@ -168,13 +185,16 @@ class settings_page(Gtk.ApplicationWindow):
             return
         del self.props.application.users[current_user]
         self.props.application.update_users_file()
-        self.props.application.current_user=""
+        #self.props.application.current_user=""
+        self.props.application.current_user_action.set_state(GLib.Variant.new_string(""))
         self.update_users_buttons(users_buttons_scroller)
     def update_current_user_message(self,container):
         current_msg=container.get_last_child()
         if current_msg!=None:
             container.remove(current_msg)
-        message=self.props.application.current_user
+        message=self.props.application.current_user_action.props.state.get_string()
+        if message != "":
+            message="current user: "+message
         label=Gtk.Label.new(message)
         self.messages_box.append(label)
     #add user
@@ -330,9 +350,9 @@ class login_page(Gtk.ApplicationWindow):
         self.spinning_animation_message.set_text("adding user")
         #add the user
         self.props.application.users[user_name]=password
-        self.props.application.add_user_to_users_file(user_name)
+        self.props.application.update_users_file()
         self.props.application.current_user=user_name
-        
+
         self.spinning_animation.stop()
         print(self.props.application.users,"user added, exiting")
         #open the last opened window
