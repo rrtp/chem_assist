@@ -81,6 +81,7 @@ class Application(Gtk.Application):
             elif self.current_user!=None:
                 self.open_page(None,pages.reactions_display_page)
 
+    #get users from file
     def get_users(self,users_file_path=users_file_path):
         #users file has user name and password seperated by 1 space
         users_file=open(users_file_path,"r")
@@ -98,15 +99,17 @@ class Application(Gtk.Application):
             users[user_credentials[0]]=user_credentials[2][:-2]
         users_file.close()
         return self.users.update(users)
-
+    #write users dictionary to users config file
     def update_users_file(self,users_file_path=users_file_path):
         print(self.users)
         users_file=open(users_file_path,"w")
         write_str=""
-   
+        #construct the string with username and password
         for user_name in self.users.keys():
             write_str=write_str+user_name+" "+self.users[user_name]+"\n"
+        #remove the last newline character
         write_str=write_str[:-2]
+        #write constructed string to file
         users_file.write(write_str)
         users_file.close()
 
@@ -141,6 +144,7 @@ class Application(Gtk.Application):
         page.set_default_size(app.monitor_width/2,app.monitor_height/2)
         page.present()
 
+    #database operations
     def connect_to_db(self,db_path,populate=False):
         #please take backup of database before connecting with path as it may be deleted by this function
         database_object=mysql.connector.connect(database=db_path)
