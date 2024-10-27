@@ -1,19 +1,15 @@
 window{
-    background-color: rgba(160, 53, 24, 0.98);
+    background-color: rgba(97, 28, 9, 0.98);
 }
 
 #main_menu_page{
     background-color: rgba(68, 77, 177, 0.716);
-}
-box{
-    border-color:black;
 }
 headerbar{
     background:rgba(157, 92, 35, 0);
     color:aliceblue;
     border:none;
 }
-
 button {
     border-radius:50px;
     border:none;
@@ -35,18 +31,19 @@ button.main_menu_buttons_box{
     background: #2a6651c5;
     color:aliceblue;
 }
-
 button:hover{
     background:#25c52d6c;
 }
+button:active{
+    background: rgba(138, 138, 38, 0.346);
+}
 label{
-    color:rgba(0, 0, 0, 0.61);
+    color:rgb(244, 209, 209);
+    font-size: x-large;
 }
 entry{
     background: rgba(18, 208, 255, 0.275);
     border:None;
     border-radius: 10px;
     padding-right:150px;
-    padding-top:5px;
-    padding-bottom: 5px;
 }
