@@ -1,6 +1,6 @@
-import gi
+import gi,time
 gi.require_version("Gtk","4.0")
-from gi.repository import Gtk,Gio,GObject
+from gi.repository import Gtk,Gio,GObject,GLib
 
 def get_children(parent):
     children=[]
@@ -60,6 +60,7 @@ class welcome_page(Gtk.ApplicationWindow):
 
 #settings page
 class settings_page(Gtk.ApplicationWindow):
+    open_users_page=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="settings")
         header_bar.set_titlebar(header_bar,self,settings=False)
@@ -72,7 +73,7 @@ class settings_page(Gtk.ApplicationWindow):
         settings_categories_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
         side_panel_scroll.set_child(settings_categories_box)
 
-        self.settings_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,0)
+        self.settings_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         self.settings_box.set_hexpand(True)
 
         self.main_box.append(side_panel_scroll)
@@ -90,32 +91,104 @@ class settings_page(Gtk.ApplicationWindow):
         appearance_settings_button.connect('clicked',self.appearance_display)
         users_settings_button.connect('clicked',self.users_display)
         db_settings_button.connect('clicked',self.db_settings_display)
+
+        if self.open_users_page==True:
+            self.users_display(None)
+            self.open_users_page=False
     def appearance_display(self,caller_obj):
         self.reload()
         label=Gtk.Label.new("Appearance settings")
         label.set_valign(Gtk.Align.START)
         self.settings_box.append(label)
-        self.props.title="settings/appearance_settings"
+        self.props.title="settings/appearance"
 
     def users_display(self,caller_obj):
         self.reload()
         self.props.title="settings/users"
+
+        #update users list
+        self.props.application.get_users()
+        users=self.props.application.users
+        #no users message
         if len(self.props.application.users.items()) == 0:
             message=Gtk.Label.new("No users in record!")
             message.set_valign(Gtk.Align.START)
             self.settings_box.append(message)
+        #users
+        users_buttons_scroller=Gtk.ScrolledWindow.new()
+        self.users_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,4)
+        user_operations_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
+        self.messages_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,3)
+
+        self.settings_box.append(users_buttons_scroller)
+        self.settings_box.append(user_operations_box)
+        self.settings_box.append(self.messages_box)
+
+        users_buttons_scroller.set_propagate_natural_height(True)
+        users_buttons_scroller.set_propagate_natural_width(True)
+        users_buttons_scroller.set_child(self.users_buttons_box)
+
+        self.button0=Gtk.CheckButton.new()
+        self.users_buttons_box.append(self.button0)
+        self.update_users_buttons(users_buttons_scroller)
+
+        #operations buttons
+        add_user_button=Gtk.Button.new_with_label("Add user")
+        remove_user_button=Gtk.Button.new_with_label("Remove current user")
+        #
+        user_operations_box.append(remove_user_button)
+        user_operations_box.append(add_user_button)
+        #
+        add_user_button.connect('clicked',self.open_login_page)
+        remove_user_button.connect('clicked',self.remove_current_user,users_buttons_scroller)
+
+    def update_users_buttons(self,container):
+        users_display_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        self.users_buttons_box=users_display_box
+        container.set_child(self.users_buttons_box)
         for user_name,password in self.props.application.users.items():
-            print("start")
             button=Gtk.CheckButton.new_with_label(user_name)
-            self.settings_box.append(button)
-            button.connect('activate',self.on_button_clicked,user_name)
-            print("done")
-    def on_button_clicked(self,caller_obj,parameter):
-        self.props.application.current_user.set_state(GLib.Variant.new_string(paramater))
+            button.set_group(self.button0)
+            self.users_buttons_box.append(button)
+            button.connect('toggled',self.set_user,user_name)
+        if self.props.application.current_user=="":
+            Gtk.CheckButton.do_activate(self.button0)
+        self.update_current_user_message(self.messages_box)
+    def remove_current_user(self,caller_obj,users_buttons_scroller):
+        current_user=self.props.application.current_user
+        users=self.props.application.users
+        if current_user=="":
+            print("No current user")
+            old_msg=self.messages_box.get_last_child()
+            self.messages_box.remove(old_msg)
+            self.messages_box.append(Gtk.Label.new("No current user!"))
+            return
+        if current_user not in users:
+            print("ERROR:Current user not in users,user removed")
+            return
+        del self.props.application.users[current_user]
+        self.props.application.update_users_file()
+        self.props.application.current_user=""
+        self.update_users_buttons(users_buttons_scroller)
+    def update_current_user_message(self,container):
+        current_msg=container.get_last_child()
+        if current_msg!=None:
+            container.remove(current_msg)
+        message=self.props.application.current_user
+        label=Gtk.Label.new(message)
+        self.messages_box.append(label)
+    #add user
+    def open_login_page(self,caller_obj):
+        self.props.application.open_page(None,login_page)
+    #set the state of current_user action to user_name of the given user
+    def set_user(self,caller_obj,user_name):
+        self.props.application.current_user_action.set_state(GLib.Variant.new_string(user_name))
+        self.props.application.current_user=user_name
+        self.update_current_user_message(self.messages_box)
 
     def db_settings_display(self,caller_obj):
         self.reload()
-        self.props.title="settings/database_directory"
+        self.props.title="settings/database"
         #database directory message display
         db_dir_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
         db_dir_box.set_valign(Gtk.Align.START)
@@ -137,24 +210,25 @@ class settings_page(Gtk.ApplicationWindow):
         #change mode allow editing
         db_entry.set_overwrite_mode(True)
         db_entry.set_max_length(0)
-
+        db_dir_box.remove(caller_obj)
         db_entry_contents=db_entry_buffer.get_text()
         #save the changes
         save_button=Gtk.Button.new_with_label("Save")
         db_dir_box.append(save_button)
         
-        save_button.connect('clicked',self.db_dir_save_button_click,db_entry_contents,db_dir_box,db_entry)
-    def db_dir_save_button_click(self,caller_obj,db_entry_contents,db_dir_box,db_entry):
+        save_button.connect('clicked',self.db_dir_save_button_click,db_entry_contents,db_dir_box,db_entry,caller_obj)
+    def db_dir_save_button_click(self,caller_obj,db_entry_contents,db_dir_box,db_entry,edit_button):
         self.props.application.current_db=db_entry_contents
         print("saved")
-
         db_dir_box.remove(caller_obj)
-
+        db_dir_box.append(edit_button)
         db_entry.set_overwrite_mode(True)
         db_entry.set_max_length(0)
 
     def reload(self):
-        self.__init__()
+        self.settings_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        self.main_box.remove(self.main_box.get_last_child())
+        self.main_box.append(self.settings_box)
 
 #main menu page
 class main_menu_page(Gtk.ApplicationWindow):
@@ -229,6 +303,15 @@ class login_page(Gtk.ApplicationWindow):
         entries_box.append(password_entry)
         entries_box.append(login_button)
 
+        #spinning animation box
+        spnning_animation_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,5)
+        self.spinning_animation_message=Gtk.Label.new("Adding user..")
+        self.spinning_animation_message.set_visible(False)
+        self.spinning_animation=Gtk.Spinner.new()
+        spnning_animation_box.append(self.spinning_animation_message)
+        spnning_animation_box.append(self.spinning_animation)
+        main_box.append(spnning_animation_box)
+        main_box.set_halign(Gtk.Align.CENTER)
         #button functions
         login_button.connect('clicked',self.on_login_button_clicked,user_name_storage,password_storage)
 
@@ -236,10 +319,27 @@ class login_page(Gtk.ApplicationWindow):
         #add user to users dict attribute in application class
         user_name=user_name.get_text()
         password=password.get_text()
+
+        self.spinning_animation.start()
+        self.spinning_animation_message.set_text("getting users")
+        self.spinning_animation.set_visible(True)
+
+        #update the users dict in application
+        self.props.application.get_users()
+
+        self.spinning_animation_message.set_text("adding user")
+        #add the user
         self.props.application.users[user_name]=password
+        self.props.application.add_user_to_users_file(user_name)
+        self.props.application.current_user=user_name
+        
+        self.spinning_animation.stop()
         print(self.props.application.users,"user added, exiting")
         #open the last opened window
-        self.props.application.open_page(None,self.props.application.window_history[-2])
+        last_opened_window=self.props.application.window_history[-2]
+        if last_opened_window == settings_page:
+            last_opened_window.open_users_page=True
+        self.props.application.open_page(None,last_opened_window)
 
 #quiz page
 class quiz_main_page(Gtk.ApplicationWindow):
@@ -302,6 +402,43 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_page_bottom_panel_box.append(reactions_db_export_button)
         reactions_page_bottom_panel_box.append(reactions_db_add_button)   
 
+        reactions_db_add_button.connect('clicked',self.add_reaction_to_db)
+    def add_reaction_to_db(self,caller_obj):
+        self.props.application.open_page(None,add_reaction_to_db_page)
+class add_reaction_to_db_page(Gtk.ApplicationWindow):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs,title="Add reaction to database")
+        header_bar.set_titlebar(header_bar,self)
+
+        main_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        self.set_child(main_box)
+
+        reactant_entry_buffer=Gtk.EntryBuffer.new(None,-1)
+        name_entry_buffer=Gtk.EntryBuffer.new(None,-1)
+        product_entry_buffer=Gtk.EntryBuffer.new(None,-1)
+        extra_info_entry_buffer=Gtk.EntryBuffer.new(None,-1)
+        
+        reactant_entry=Gtk.Entry.new_with_buffer(reactant_entry_buffer)
+        name_entry=Gtk.Entry.new_with_buffer(name_entry_buffer)
+        product_entry=Gtk.Entry.new_with_buffer(product_entry_buffer)
+        extra_info_entry=Gtk.Entry.new_with_buffer(extra_info_entry_buffer)
+
+        reactant_entry.set_placeholder_text("reactants")
+        name_entry.set_placeholder_text("name")
+        product_entry.set_placeholder_text("products")
+        extra_info_entry.set_placeholder_text("extra info")
+
+        add_button=Gtk.Button.new_with_label("Add reaction to database")
+        add_button.set_halign(Gtk.Align.CENTER)
+        main_box.append(reactant_entry)
+        main_box.append(name_entry)
+        main_box.append(product_entry)
+        main_box.append(extra_info_entry)
+        main_box.append(add_button)
+
+        add_button.connect('clicked',self.add_reaction_to_db)
+    def add_reaction_to_db(self,caller_obj):
+        pass
 class simulator_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Simulator")
