@@ -94,7 +94,8 @@ class settings_page(Gtk.ApplicationWindow):
         db_settings_button.connect('clicked',self.db_settings_display)
 
         #actions
-        user_button_activate_action=Gio.SimpleAction.new_stateful("current_user_button",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
+        #users selection button
+        user_button_activate_action=Gio.SimpleAction.new_stateful("current_user_button",GLib.VariantType.new("s"),GLib.Variant.new_string(self.props.application.current_user_action.props.state.get_string()))
         user_button_activate_action.connect('activate',self.on_activate_users_button)
         user_button_activate_action.connect('change_state',self.on_user_button_action_state_change)
         self.add_action(user_button_activate_action)
