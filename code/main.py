@@ -58,7 +58,7 @@ class Application(Gtk.Application):
         self.css_provider.load_from_path(self.css_file_path)
         self.add_styles_from_provider(self.css_provider)
 
-        #define actions   
+        #define actions
         quit_action=Gio.SimpleAction.new("quit",None)
         quit_action.connect('activate',self.close_page)
         self.add_action(quit_action)
@@ -72,7 +72,6 @@ class Application(Gtk.Application):
 
         #open welcome page
         self.open_page(None,pages.welcome_page)
-
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
             if self.current_user == None:
@@ -100,20 +99,11 @@ class Application(Gtk.Application):
         users_file.close()
         return self.users.update(users)
 
-    def add_user_to_users_file(self,user_name,users_file_path=users_file_path):
+    def update_users_file(self,users_file_path=users_file_path):
+        print(self.users)
         users_file=open(users_file_path,"w")
         write_str=""
-        for user_name in self.users.keys():
-            #write username and password
-            write_str=write_str+user_name+" "+self.users[user_name]+"\n"
-        write_str=write_str[:-2]
-        users_file.seek(0)
-        users_file.write(write_str)
-        #close file
-        users_file.close()
-    def update_users_file(self,users_file_path=users_file_path):
-        users_file=open(users_file_path,"w+")
-        write_str=""
+   
         for user_name in self.users.keys():
             write_str=write_str+user_name+" "+self.users[user_name]+"\n"
         write_str=write_str[:-2]
