@@ -15,10 +15,6 @@ def add_css_class_to_children(parent,css_class):
     children=get_children(parent)
     for i in children:
         i.add_css_class(css_class)
-class settings_button(Gtk.Button):
-    def __init__(self,icon,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.set_child(icon)
 
 #header bar        
 class header_bar(Gtk.HeaderBar):
@@ -28,13 +24,20 @@ class header_bar(Gtk.HeaderBar):
         page.set_titlebar(self())
 
         if settings==True:
-            #set settings button and connect to settings page
-            self.settings_button=settings_button(page.props.application.settings_image)
+            #settings button
+            self.settings_button=Gtk.Button.new()
+            settings_button_image=Gtk.Image.new_from_file(page.props.application.settings_image_path)
+            self.settings_button.set_child(settings_button_image)
+            #add to headerbar
             page.props.titlebar.pack_end(page.props.titlebar.settings_button)
             page.props.titlebar.settings_button.connect('clicked',page.props.application.open_page,settings_page)
             self.settings_button.add_css_class("headerbar")
         if back_button==True:
-            self.back_button=Gtk.Button.new_with_label("b")
+            #back button
+            self.back_button=Gtk.Button.new()
+            back_button_image=Gtk.Image.new_from_file(page.props.application.back_image_path)
+            self.back_button.set_child(back_button_image)
+            #add to headerbar
             page.props.titlebar.back_button.connect('clicked',page.props.application.open_page,page.props.application.window_history[-2])
             page.props.titlebar.pack_start(page.props.titlebar.back_button)
             self.back_button.add_css_class("headerbar")
@@ -122,8 +125,6 @@ class settings_page(Gtk.ApplicationWindow):
         self.reload()
         self.props.title="settings/users"
 
-        #update users list
-        self.props.application.get_users()
         users=self.props.application.users
         #no users message
         if len(self.props.application.users.items()) == 0:
@@ -281,7 +282,7 @@ class main_menu_page(Gtk.ApplicationWindow):
 
         #button functions
         reactions_button.set_action_name('app.open_reactions_page')
-        quiz_button.connect('clicked',self.props.application.open_page,quiz_main_page)
+        quiz_button.set_action_name('app.open_quiz')
         quit_button.set_action_name('app.quit')
         simulator_button.connect('clicked',self.props.application.open_page,simulator_page)
         settings_button.connect('clicked',self.props.application.open_page,settings_page)
@@ -345,13 +346,9 @@ class login_page(Gtk.ApplicationWindow):
         self.spinning_animation_message.set_text("getting users")
         self.spinning_animation.set_visible(True)
 
-        #update the users dict in application
-        self.props.application.get_users()
-
         self.spinning_animation_message.set_text("adding user")
         #add the user
         self.props.application.users[user_name]=password
-        self.props.application.update_users_file()
         self.props.application.current_user=user_name
 
         self.spinning_animation.stop()
@@ -367,6 +364,7 @@ class quiz_main_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Quiz main page")
         header_bar.set_titlebar(header_bar,self)
+        
 
 class reactions_list(GObject.Object):
     def __init__(self,name,reactant,product,extra_info):
