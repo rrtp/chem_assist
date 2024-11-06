@@ -1,7 +1,8 @@
-import gi,mysql,os
+import gi,os,mysql.connector
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk,Gdk,Gio,GLib
 import pages
+import quiz
 
 #folder for Css, user interface layout definition,database,pictures
 css_dir="styles/"
@@ -39,9 +40,9 @@ class Application(Gtk.Application):
     users={}
 
     #images
-    settings_image=Gtk.Image.new_from_resource(image_paths["settings"])
-    back_image=Gtk.Image.new_from_resource(image_paths["back"])
-    app_image=Gtk.Image.new_from_resource(image_paths["app"])
+    settings_image_path=image_paths["settings"]
+    back_image_path=image_paths["back"]
+    app_image_path=image_paths["app"]
 
     #constructor
     def __init__(self):
@@ -70,6 +71,10 @@ class Application(Gtk.Application):
         self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
         self.add_action(self.current_user_action)
 
+        open_quiz_action=Gio.SimpleAction.new("open_quiz",None)
+        open_quiz_action.connect('activate',self.open_quiz_page)
+        self.add_action(open_quiz_action)
+
         #open welcome page
         self.open_page(None,pages.welcome_page)
     #reactions page open
@@ -81,37 +86,9 @@ class Application(Gtk.Application):
             elif self.current_user!=None:
                 self.open_page(None,pages.reactions_display_page)
 
-    #get users from file
-    def get_users(self,users_file_path=users_file_path):
-        #users file has user name and password seperated by 1 space
-        users_file=open(users_file_path,"r")
-        users_file_lines=users_file.readlines()
-        users={}
-        if len(users_file_lines)==0:
-            print("no user details in users file")
-            return users
-        for user_details in users_file_lines:
-            user_credentials=user_details.partition(" ")
-            #add username and password to users dictionary
-            if user_credentials[2][-1]!="\n":
-                users[user_credentials[0]]=user_credentials[2]
-                continue
-            users[user_credentials[0]]=user_credentials[2][:-2]
-        users_file.close()
-        return self.users.update(users)
-    #write users dictionary to users config file
-    def update_users_file(self,users_file_path=users_file_path):
-        print(self.users)
-        users_file=open(users_file_path,"w")
-        write_str=""
-        #construct the string with username and password
-        for user_name in self.users.keys():
-            write_str=write_str+user_name+" "+self.users[user_name]+"\n"
-        #remove the last newline character
-        write_str=write_str[:-2]
-        #write constructed string to file
-        users_file.write(write_str)
-        users_file.close()
+    #Open quiz page
+    def open_quiz_page(*args):
+        pass
 
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
@@ -147,10 +124,17 @@ class Application(Gtk.Application):
     #database operations
     def connect_to_db(self,db_path,populate=False):
         #please take backup of database before connecting with path as it may be deleted by this function
-        database_object=mysql.connector.connect(database=db_path)
-        self.db_cursor=database_object.cursor()
-        if populate==True:
-            self.populate_db(db_cursor)
+        connection_profile={
+            "user":self.props.application.current_user_action.props.state.get_string(),
+
+        }
+        try:
+            database_object=mysql.connector.connect(connection_profile)
+        except mysql.connector.Error as err:
+            print("error while connecting to database server:",err)
+            return
+        db_cursor=database_object.cursor()
+        return db_cursor
     def populate_db(self,db_cursor):
         db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer varchar,extra_info varchar)')
         db_cursor.execute('CREATE TABLE reactions(name varchar,reactant varchat,product varchar,extra_info varchar)')
