@@ -63,7 +63,7 @@ class welcome_page(Gtk.ApplicationWindow):
 
 #settings page
 class settings_page(Gtk.ApplicationWindow):
-    open_users_page=False
+    open_page=""
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="settings")
@@ -98,15 +98,24 @@ class settings_page(Gtk.ApplicationWindow):
 
         #actions
         #users selection button
-        user_button_activate_action=Gio.SimpleAction.new_stateful("current_user_button",GLib.VariantType.new("s"),GLib.Variant.new_string(self.props.application.current_user_action.props.state.get_string()))
+        user_button_activate_action=Gio.SimpleAction.new_stateful('current_user_button',GLib.VariantType.new("s"),GLib.Variant.new_string(self.props.application.current_user_action.props.state.get_string()))
         user_button_activate_action.connect('activate',self.on_activate_users_button)
         user_button_activate_action.connect('change_state',self.on_user_button_action_state_change)
         self.add_action(user_button_activate_action)
 
-        if self.open_users_page==True:
+        #connection to db
+        retry_connection_to_db_action=Gio.SimpleAction.new("retry_connection_to_db",None)
+        retry_connection_to_db_action.connect('activate',self.retry_connection_to_db)
+        self.add_action(retry_connection_to_db_action)
+
+        #open users page window if open_page variable is set to users_page
+        if self.open_page=="users_page":
             self.users_display(None)
             self.open_users_page=False
-        
+
+    def retry_connection_to_db(self,caller_action,param):
+        self.props.application.connect_to_db_action.activate()
+        self.update_db_connection_button_refresh(None)
     def on_user_button_action_state_change(*args):
         print("state changed",args)
     def on_activate_users_button(self,caller_action,parameter):
@@ -211,23 +220,44 @@ class settings_page(Gtk.ApplicationWindow):
     def db_settings_display(self,caller_obj):
         self.reload()
         self.props.title="settings/database"
+
         #database directory message display
         db_dir_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
         db_dir_box.set_valign(Gtk.Align.START)
-        self.settings_box.append(db_dir_box)
+
         db_dir_label=Gtk.Label.new("Current database directory:")
-        database_directory_entry_buffer=Gtk.EntryBuffer.new(self.props.application.current_db,-1)
+        database_directory_entry_buffer=Gtk.EntryBuffer.new(self.props.application.current_db_name,-1)
         database_directory_textbox=Gtk.Entry.new_with_buffer(database_directory_entry_buffer)
         database_directory_textbox.set_overwrite_mode(False)
         database_directory_textbox.set_max_length(database_directory_textbox.get_text_length())
-        #edit
+        
         db_dir_edit_button=Gtk.Button.new_with_label("Edit")
+        db_dir_edit_button.connect('clicked',self.on_db_dir_edit_button_click,database_directory_textbox,database_directory_entry_buffer,db_dir_box)
 
         db_dir_box.append(db_dir_label)
         db_dir_box.append(database_directory_textbox)
         db_dir_box.append(db_dir_edit_button)
 
-        db_dir_edit_button.connect('clicked',self.on_db_dir_edit_button_click,database_directory_textbox,database_directory_entry_buffer,db_dir_box)
+        #db connection status
+        db_connection_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
+
+        db_connection_status_label=self.update_db_connection_button_refresh(None)
+        connect_to_db_button=Gtk.Button.new_with_label("retry connecting to database")
+        connect_to_db_button.set_action_name('win.retry_connection_to_db')
+
+        db_connection_box.append(db_connection_status_label)
+        db_connection_box.append(connect_to_db_button)
+
+        #add to settings window
+        self.settings_box.append(db_dir_box)
+        self.settings_box.append(db_connection_box)
+
+    def update_db_connection_button_refresh(self,caller_obj):
+        db_cursor=self.props.application.db_cursor
+        db_cursor_status="cursor available"
+        if db_cursor == None:
+            db_cursor_status="No db cursor"
+        return Gtk.Label.new(db_cursor_status)
     def on_db_dir_edit_button_click(self,caller_obj,db_entry,db_entry_buffer,db_dir_box):
         #change mode allow editing
         db_entry.set_overwrite_mode(True)
@@ -356,7 +386,7 @@ class login_page(Gtk.ApplicationWindow):
         #open the last opened window
         last_opened_window=self.props.application.window_history[-2]
         if last_opened_window == settings_page:
-            last_opened_window.open_users_page=True
+            last_opened_window.open_page="users_page"
         self.props.application.open_page(None,last_opened_window)
 
 #quiz page
@@ -377,6 +407,10 @@ class reactions_list(GObject.Object):
 class reactions_display_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
+        if self.props.application.db_cursor == None:
+            database_connection_message="(no db connection)"
+        if self.props.application.current_user_action.props.state.get_string()!=None:
+            self.set_title("Reactions (user:"+ self.props.application.current_user_action.props.state.get_string()+")"+database_connection_message)
 
         header_bar.set_titlebar(header_bar,self)
         #boxes
