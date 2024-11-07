@@ -31,13 +31,14 @@ class Application(Gtk.Application):
     css_provider=Gtk.CssProvider.new()
 
     #database file path
-    current_db=db_dir+"test.db"
+    current_db_name="chem_assist_db"
+    db_cursor=None
 
     #config file
     users_file_path="users.conf"
     #users
     current_user=""
-    users={}
+    users={"chem_assist_user":"chem_assist"}
 
     #images
     settings_image_path=image_paths["settings"]
@@ -68,23 +69,38 @@ class Application(Gtk.Application):
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
 
-        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string(""))
+        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("chem_assist_user"))
         self.add_action(self.current_user_action)
 
         open_quiz_action=Gio.SimpleAction.new("open_quiz",None)
         open_quiz_action.connect('activate',self.open_quiz_page)
         self.add_action(open_quiz_action)
 
+        self.connect_to_db_action=Gio.SimpleAction.new("connect_to_db",None)
+        self.connect_to_db_action.connect('activate',self.connect_to_db)
+        self.add_action(self.connect_to_db_action)
+
         #open welcome page
         self.open_page(None,pages.welcome_page)
+    #connect to db
+    def connect_to_db(self,caller_action,parameter):
+        db_connection_obj=self.connect_to_db_server()
+        print("db connection obj,",db_connection_obj)
+        cursor=self.get_cursor_from_db_connection(db_connection_obj)
+        self.db_cursor=cursor
+        if self.db_cursor != None:
+            return True
+        else:
+            return False
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
-            if self.current_user == None:
-                self.setup_user()
-                print("setting up")
-
-            elif self.current_user!=None:
-                self.open_page(None,pages.reactions_display_page)
+        if self.db_cursor == None:
+            #connect to database server and get cursor
+            db_object=self.connect_to_db_server()
+            cursor=self.get_cursor_from_db_connection(db_object)
+            self.db_cursor=cursor
+        print("cursor",cursor)
+        self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
     def open_quiz_page(*args):
@@ -122,18 +138,27 @@ class Application(Gtk.Application):
         page.present()
 
     #database operations
-    def connect_to_db(self,db_path,populate=False):
+    def connect_to_db_server(self):
         #please take backup of database before connecting with path as it may be deleted by this function
         connection_profile={
-            "user":self.props.application.current_user_action.props.state.get_string(),
-
-        }
+            "user":self.current_user_action.props.state.get_string(),
+            "password":self.users[self.current_user_action.props.state.get_string()],
+            "host":"localhost",
+            "database":self.current_db_name
+            }
         try:
-            database_object=mysql.connector.connect(connection_profile)
+            database_object=mysql.connector.connect()
+            print("database connection=>", database_object)
         except mysql.connector.Error as err:
             print("error while connecting to database server:",err)
             return
-        db_cursor=database_object.cursor()
+        return database_object
+    def get_cursor_from_db_connection(self,db_connection_object):
+        try:
+            db_cursor=db_connection_object.cursor()
+        except mysql.connector.Error as err:
+            print("Error while creating cursor",err)
+            return
         return db_cursor
     def populate_db(self,db_cursor):
         db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer varchar,extra_info varchar)')
