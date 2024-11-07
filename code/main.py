@@ -38,7 +38,7 @@ class Application(Gtk.Application):
     users_file_path="users.conf"
     #users
     current_user=""
-    users={"chem_assist_user":"chem_assist"}
+    users={"chem_assist_user":"chem_assist_user_password"}
 
     #images
     settings_image_path=image_paths["settings"]
@@ -85,13 +85,15 @@ class Application(Gtk.Application):
     #connect to db
     def connect_to_db(self,caller_action,parameter):
         db_connection_obj=self.connect_to_db_server()
-        print("db connection obj,",db_connection_obj)
+        #if error return error
+        if type(db_connection_obj) == mysql.connector.errors.ProgrammingError:
+            return db_connection_obj
         cursor=self.get_cursor_from_db_connection(db_connection_obj)
         self.db_cursor=cursor
         if self.db_cursor != None:
             return True
         else:
-            return False
+            return self.db_cursor
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
         if self.db_cursor == None:
@@ -99,7 +101,7 @@ class Application(Gtk.Application):
             db_object=self.connect_to_db_server()
             cursor=self.get_cursor_from_db_connection(db_object)
             self.db_cursor=cursor
-        print("cursor",cursor)
+        print("cursor",self.db_cursor)
         self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
@@ -143,22 +145,20 @@ class Application(Gtk.Application):
         connection_profile={
             "user":self.current_user_action.props.state.get_string(),
             "password":self.users[self.current_user_action.props.state.get_string()],
-            "host":"localhost",
-            "database":self.current_db_name
             }
         try:
-            database_object=mysql.connector.connect()
-            print("database connection=>", database_object)
+            database_object=mysql.connector.connect( **connection_profile)
+            print("users=>",self.users)
         except mysql.connector.Error as err:
             print("error while connecting to database server:",err)
-            return
+            return err
         return database_object
     def get_cursor_from_db_connection(self,db_connection_object):
         try:
             db_cursor=db_connection_object.cursor()
         except mysql.connector.Error as err:
             print("Error while creating cursor",err)
-            return
+            return err
         return db_cursor
     def populate_db(self,db_cursor):
         db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer varchar,extra_info varchar)')
