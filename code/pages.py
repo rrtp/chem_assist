@@ -1,4 +1,4 @@
-import gi,time
+import gi,mysql.connector
 gi.require_version("Gtk","4.0")
 from gi.repository import Gtk,Gio,GObject,GLib
 
@@ -394,10 +394,12 @@ class login_page(Gtk.ApplicationWindow):
         self.spinning_animation_message.set_text("adding user")
         #add the user
         self.props.application.users[user_name]=password
+        self.props.application.current_user_action.set_state(GLib.Variant.new_string(user_name))
         self.props.application.current_user=user_name
-
+        #stop spinning animation
         self.spinning_animation.stop()
-        print(self.props.application.users,"user added, exiting")
+        #print user added message
+        print(self.props.application.users.keys(),"user added, exiting")
         #open the last opened window
         last_opened_window=self.props.application.window_history[-2]
         if last_opened_window == settings_page:
@@ -426,7 +428,6 @@ class reactions_display_page(Gtk.ApplicationWindow):
             database_connection_message="(no db connection)"
         if self.props.application.current_user_action.props.state.get_string()!=None:
             self.set_title("Reactions (user:"+ self.props.application.current_user_action.props.state.get_string()+")"+database_connection_message)
-
         header_bar.set_titlebar(header_bar,self)
         #boxes
         reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
@@ -504,9 +505,28 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
         main_box.append(extra_info_entry)
         main_box.append(add_button)
 
-        add_button.connect('clicked',self.add_reaction_to_db)
-    def add_reaction_to_db(self,caller_obj):
-        pass
+        
+        #reaction_details_buffers=(reactant_entry_buffer,name_entry_buffer,product_entry_buffer,extra_info_entry_buffer)
+        add_button.connect('clicked',self.add_reaction_to_db,(reactant_entry_buffer,name_entry_buffer,product_entry_buffer,extra_info_entry_buffer))
+    def add_reaction_to_db(self,caller_obj,reaction_details_buffers):
+        db_cursor=self.props.application.db_cursor
+        #columns
+        columns=self.props.application.reactions_table_columns
+        columns_str=""
+        for i in columns:
+            columns_str = columns_str + i +" "
+        #values
+        values_str=""
+        for i in reaction_details_buffers:
+            i=i.get_text()
+            print("detaul:",i)
+            values_str=values_str+i+" "
+        print("strings",values_str,columns_str)
+        #insert details in table
+        try:
+            db_cursor.execute(f'insert into reaction columns({columns_str} values({values_str}))')
+        except mysql.connector.Error as err:
+            print("Error while inserting reactions details into table:",err)
 class simulator_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Simulator")

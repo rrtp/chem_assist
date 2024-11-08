@@ -31,20 +31,22 @@ class Application(Gtk.Application):
     css_provider=Gtk.CssProvider.new()
 
     #database file path
-    current_db_name="chem_assist_db"
+    current_db_name="chem_assist_db1"
     db_cursor=None
+    database_object=None
 
     #config file
     users_file_path="users.conf"
     #users
     current_user=""
-    users={"chem_assist_user":"chem_assist_user_password"}
+    users={"chem_assist_user":"chem_assist_user_password","root":"Mysql@root"}
 
     #images
     settings_image_path=image_paths["settings"]
     back_image_path=image_paths["back"]
     app_image_path=image_paths["app"]
 
+    reactions_table_columns=("name","reactant","product","extra_info")
     #constructor
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
@@ -69,7 +71,7 @@ class Application(Gtk.Application):
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
 
-        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("chem_assist_user"))
+        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("root"))
         self.add_action(self.current_user_action)
 
         open_quiz_action=Gio.SimpleAction.new("open_quiz",None)
@@ -84,29 +86,30 @@ class Application(Gtk.Application):
         self.open_page(None,pages.welcome_page)
     #connect to db
     def connect_to_db(self,caller_action,parameter):
-        db_connection_obj=self.connect_to_db_server()
+        self.connect_to_db_server()
         #if error return error
-        if type(db_connection_obj) == mysql.connector.errors.ProgrammingError:
-            return db_connection_obj
-        cursor=self.get_cursor_from_db_connection(db_connection_obj)
-        self.db_cursor=cursor
-        if self.db_cursor != None:
-            return True
-        else:
-            return self.db_cursor
+        if type(self.database_object) == mysql.connector.errors.ProgrammingError:
+            return self.database_object
+        self.db_cursor=self.get_cursor_from_db_connection(self.database_object)
+    #make the database and tables
+    def setup_database(self,db_cursor):
+        self.create_db(db_cursor)
+        self.populate_db(db_cursor)
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
-        if self.db_cursor == None:
-            #connect to database server and get cursor
-            db_object=self.connect_to_db_server()
-            cursor=self.get_cursor_from_db_connection(db_object)
-            self.db_cursor=cursor
-        print("cursor",self.db_cursor)
+        self.connect_to_db(None,None)
+        if type(self.db_cursor) == mysql.connector.errors.ProgrammingError or self.db_cursor==None:
+            print("ERROR while obtaining connector to database",self.db_cursor)
+            return
+        self.setup_database(self.db_cursor)
+        self.get_data_from_db("reactions",self.db_cursor)
         self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
-    def open_quiz_page(*args):
-        pass
+    def open_quiz_page(self,*args):
+        self.connect_to_db(None,None)
+        self.db_cursor.execute(f"use {self.current_db_name}")
+        quiz.main(self.database_object)
 
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
@@ -147,12 +150,10 @@ class Application(Gtk.Application):
             "password":self.users[self.current_user_action.props.state.get_string()],
             }
         try:
-            database_object=mysql.connector.connect( **connection_profile)
-            print("users=>",self.users)
+            self.database_object=mysql.connector.connect( **connection_profile)
         except mysql.connector.Error as err:
             print("error while connecting to database server:",err)
             return err
-        return database_object
     def get_cursor_from_db_connection(self,db_connection_object):
         try:
             db_cursor=db_connection_object.cursor()
@@ -160,11 +161,32 @@ class Application(Gtk.Application):
             print("Error while creating cursor",err)
             return err
         return db_cursor
+    def create_db(self,db_cursor):
+        #create database
+        try:
+            db_cursor.execute(f'create database {self.current_db_name};')
+            print("CURSORRR: ",self.db_cursor, db_cursor)
+        except mysql.connector.Error as err:
+            print("Error while CREATING database",err)
+        #use database
+        try:
+            db_cursor.execute(f'use {self.current_db_name};')
+            print('using database')
+        except mysql.connector.Error as err:
+            print("Error while USING database",err)
+
     def populate_db(self,db_cursor):
-        db_cursor.execute('CREATE TABLE questions(question varchar,option1 varchar,option2 varchar,option3 varchar,option4 varchar,answer varchar,extra_info varchar)')
-        db_cursor.execute('CREATE TABLE reactions(name varchar,reactant varchat,product varchar,extra_info varchar)')
+        try:
+            db_cursor.execute('CREATE TABLE questions(question varchar(255),option1 varchar(255),option2 varchar(255),option3 varchar(255),option4 varchar(255),answer varchar(255),extra_info varchar(255));')
+        except mysql.connector.Error as err:
+            print("eror while creating table \"questions\"", err)
+        try:
+            db_cursor.execute('CREATE TABLE reactions(name varchar(255),reactant varchar(255),product varchar(255),extra_info varchar(255));')
+        except mysql.connector.Error as err:
+            print("eror while creating table \"reactions\"", err)
     def get_data_from_db(self,table_name,db_cursor):
         db_data=db_cursor.execute(f'SELECT * FROM {table_name}')
+        print(db_data)
         return db_data
 
 #Create an instance of Application

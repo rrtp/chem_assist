@@ -194,10 +194,10 @@ def reset_app():
     exit_button = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12), bg="#f44336", fg="white")
     exit_button.pack(pady=10)
 
-def main():
+def main(db_connection_object):
     global root, connection
     # Connect to the database and create tables
-    connection = create_connection()
+    connection = db_connection_object
     create_tables(connection)
     add_sample_questions(connection)
     
