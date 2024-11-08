@@ -31,7 +31,7 @@ class Application(Gtk.Application):
     css_provider=Gtk.CssProvider.new()
 
     #database file path
-    current_db_name="chem_assist_db1"
+    db_name="chem_assist_db1"
     db_cursor=None
     database_object=None
 
@@ -67,6 +67,7 @@ class Application(Gtk.Application):
         quit_action.connect('activate',self.close_page)
         self.add_action(quit_action)
 
+
         open_reactions_page_action=Gio.SimpleAction.new("open_reactions_page",None)
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
@@ -94,21 +95,26 @@ class Application(Gtk.Application):
     #make the database and tables
     def setup_database(self,db_cursor):
         self.create_db(db_cursor)
-        self.populate_db(db_cursor)
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
         self.connect_to_db(None,None)
         if type(self.db_cursor) == mysql.connector.errors.ProgrammingError or self.db_cursor==None:
             print("ERROR while obtaining connector to database",self.db_cursor)
             return
+        #create database
         self.setup_database(self.db_cursor)
-        self.get_data_from_db("reactions",self.db_cursor)
+        #create reactions table
+        self.create_reactions_table(self.db_cursor)
+        #open reactions page
         self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
     def open_quiz_page(self,*args):
         self.connect_to_db(None,None)
-        self.db_cursor.execute(f"use {self.current_db_name}")
+        self.setup_database(self.db_cursor)
+        #close current window
+        self.open_page(None,pages.quiz_main_page)
+        #open quiz window
         quiz.main(self.database_object)
 
     #get monitor dimentions
@@ -164,24 +170,26 @@ class Application(Gtk.Application):
     def create_db(self,db_cursor):
         #create database
         try:
-            db_cursor.execute(f'create database {self.current_db_name};')
+            db_cursor.execute(f'create database {self.db_name};')
             print("CURSORRR: ",self.db_cursor, db_cursor)
         except mysql.connector.Error as err:
             print("Error while CREATING database",err)
         #use database
         try:
-            db_cursor.execute(f'use {self.current_db_name};')
+            db_cursor.execute(f'use {self.db_name};')
             print('using database')
         except mysql.connector.Error as err:
             print("Error while USING database",err)
 
-    def populate_db(self,db_cursor):
+    def create_reactions_table(self,db_cursor):
         try:
-            db_cursor.execute('CREATE TABLE questions(question varchar(255),option1 varchar(255),option2 varchar(255),option3 varchar(255),option4 varchar(255),answer varchar(255),extra_info varchar(255));')
-        except mysql.connector.Error as err:
-            print("eror while creating table \"questions\"", err)
-        try:
-            db_cursor.execute('CREATE TABLE reactions(name varchar(255),reactant varchar(255),product varchar(255),extra_info varchar(255));')
+            create_reactions_table_sql_command='''CREATE TABLE reactions(
+            reaction_entry_number int auto_increment primary key,
+            name varchar(255),
+            reactant varchar(255),
+            product varchar(255),
+            extra_info varchar(255));'''
+            db_cursor.execute(create_reactions_table_sql_command)
         except mysql.connector.Error as err:
             print("eror while creating table \"reactions\"", err)
     def get_data_from_db(self,table_name,db_cursor):

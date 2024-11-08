@@ -235,7 +235,7 @@ class settings_page(Gtk.ApplicationWindow):
         db_dir_box.set_valign(Gtk.Align.START)
 
         db_dir_label=Gtk.Label.new("Current database directory:")
-        database_directory_entry_buffer=Gtk.EntryBuffer.new(self.props.application.current_db_name,-1)
+        database_directory_entry_buffer=Gtk.EntryBuffer.new(self.props.application.db_name,-1)
         database_directory_textbox=Gtk.Entry.new_with_buffer(database_directory_entry_buffer)
         database_directory_textbox.set_overwrite_mode(False)
         database_directory_textbox.set_max_length(database_directory_textbox.get_text_length())
@@ -283,7 +283,7 @@ class settings_page(Gtk.ApplicationWindow):
         save_button.connect('clicked',self.db_dir_save_button_click,db_entry_contents,db_dir_box,db_entry,caller_obj)
     #save the new database name
     def db_dir_save_button_click(self,caller_obj,db_entry_contents,db_dir_box,db_entry,edit_button):
-        self.props.application.current_db=db_entry_contents
+        self.props.application.db_name=db_entry_contents
         print("saved")
         db_dir_box.remove(caller_obj)
         db_dir_box.append(edit_button)
@@ -411,6 +411,7 @@ class quiz_main_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Quiz main page")
         header_bar.set_titlebar(header_bar,self)
+        self.set_child(Gtk.Label.new("Quiz opened in new window"))
 
 class reactions_list(GObject.Object):
     def __init__(self,name,reactant,product,extra_info):
@@ -423,11 +424,19 @@ class reactions_list(GObject.Object):
 class reactions_display_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
-        database_connection_message=""
-        if self.props.application.db_cursor == None:
-            database_connection_message="(no db connection)"
+        ##title
+        title_message="Reactions"
+        #user
         if self.props.application.current_user_action.props.state.get_string()!=None:
-            self.set_title("Reactions (user:"+ self.props.application.current_user_action.props.state.get_string()+")"+database_connection_message)
+            title_message=title_message+" (user:"+self.props.application.current_user_action.props.state.get_string()+")"
+        #database
+        if self.props.application.db_cursor == None:
+            title_message=title_message+"(no db connection)"
+        elif self.props.application.database_object.is_connected():
+            title_message=title_message[:-1]+",database:"+self.props.application.db_name+")"
+        self.set_title(title_message)
+
+        #titlebar
         header_bar.set_titlebar(header_bar,self)
         #boxes
         reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
@@ -504,29 +513,32 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
         main_box.append(product_entry)
         main_box.append(extra_info_entry)
         main_box.append(add_button)
-
         
         #reaction_details_buffers=(reactant_entry_buffer,name_entry_buffer,product_entry_buffer,extra_info_entry_buffer)
         add_button.connect('clicked',self.add_reaction_to_db,(reactant_entry_buffer,name_entry_buffer,product_entry_buffer,extra_info_entry_buffer))
     def add_reaction_to_db(self,caller_obj,reaction_details_buffers):
-        db_cursor=self.props.application.db_cursor
         #columns
         columns=self.props.application.reactions_table_columns
         columns_str=""
         for i in columns:
-            columns_str = columns_str + i +" "
+            columns_str = columns_str + i + ","
+        columns_str=columns_str[:-1]
         #values
         values_str=""
         for i in reaction_details_buffers:
             i=i.get_text()
-            print("detaul:",i)
-            values_str=values_str+i+" "
-        print("strings",values_str,columns_str)
+            values_str=values_str+"'"+i+"',"
+        values_str=values_str[:-1]
         #insert details in table
         try:
-            db_cursor.execute(f'insert into reaction columns({columns_str} values({values_str}))')
+            insert_reaction_string=f"insert into reactions ({columns_str}) values({values_str});"
+            self.props.application.db_cursor.execute(insert_reaction_string)
+            self.props.application.database_object.commit()
         except mysql.connector.Error as err:
-            print("Error while inserting reactions details into table:",err)
+            print("Error while inserting reactions details into table:\n",err)
+        #open previous window
+        previous_window=self.props.application.window_history[-2]
+        self.props.application.open_page(None,previous_window)
 class simulator_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Simulator")

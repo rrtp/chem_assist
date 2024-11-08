@@ -2,15 +2,6 @@ import mysql.connector
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-def create_connection():
-    # Connect to the MySQL database
-    connection = mysql.connector.connect(
-        host='localhost',       # MySQL server details
-        user='root',           # MySQL username
-        password='Login@4475', # MySQL password
-        database='quiz_app'    # Update with your database name if needed
-    )
-    return connection
 
 def create_tables(connection):
     # Create tables if they don't exist
@@ -191,9 +182,10 @@ def reset_app():
     report_button.pack(pady=10)
 
     # Exit button
-    exit_button = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12), bg="#f44336", fg="white")
+    exit_button = tk.Button(root, text="Exit", command=close_window, font=("Arial", 12), bg="#f44336", fg="white")
     exit_button.pack(pady=10)
-
+def close_window():
+    root.quit()
 def main(db_connection_object):
     global root, connection
     # Connect to the database and create tables
@@ -204,7 +196,7 @@ def main(db_connection_object):
     # Set up the main window
     root = tk.Tk()
     root.title("Chemistry Quiz Application")
-    root.attributes('-fullscreen', True)  # Open in full screen
+    root.attributes('-fullscreen', False)  # Open in full screen
     root.configure(bg="#e0f7fa")  # Light blue background
 
     reset_app()  # Load the home screen
