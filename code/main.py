@@ -1,6 +1,7 @@
 import gi,os,mysql.connector
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk,Gdk,Gio,GLib
+from mysql.connector import errorcode
 import pages
 import quiz
 
@@ -39,7 +40,7 @@ class Application(Gtk.Application):
     users_file_path="users.conf"
     #users
     current_user=""
-    users={"chem_assist_user":"chem_assist_user_password","root":"Mysql@root"}
+    users={"chem_assist_user":"chem_assist_user_password"}
 
     #images
     settings_image_path=image_paths["settings"]
@@ -66,13 +67,13 @@ class Application(Gtk.Application):
         quit_action=Gio.SimpleAction.new("quit",None)
         quit_action.connect('activate',self.close_page)
         self.add_action(quit_action)
-
+        
 
         open_reactions_page_action=Gio.SimpleAction.new("open_reactions_page",None)
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
 
-        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("root"))
+        self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("chem_assist_user"))
         self.add_action(self.current_user_action)
 
         open_quiz_action=Gio.SimpleAction.new("open_quiz",None)
@@ -87,34 +88,51 @@ class Application(Gtk.Application):
         self.open_page(None,pages.welcome_page)
     #connect to db
     def connect_to_db(self,caller_action,parameter):
-        self.connect_to_db_server()
-        #if error return error
-        if type(self.database_object) == mysql.connector.errors.ProgrammingError:
-            return self.database_object
-        self.db_cursor=self.get_cursor_from_db_connection(self.database_object)
-    #make the database and tables
-    def setup_database(self,db_cursor):
-        self.create_db(db_cursor)
+        #connect to server
+        return_value_from_connect=self.connect_to_db_server()
+        #do not contiunue if no cursor is available
+        if return_value_from_connect != True:
+            return return_value_from_connect
+        #get cursor
+        return_value_from_get_cursor=self.get_cursor_from_db_connection(self.database_object)
+        #return the error if failed to get cursor
+        if return_value_from_get_cursor !=True:
+            return return_value_from_get_cursor
+        return True
     #reactions page open
     def on_open_reactions_page(self,caller_obj,arg3):
-        self.connect_to_db(None,None)
-        if type(self.db_cursor) == mysql.connector.errors.ProgrammingError or self.db_cursor==None:
-            print("ERROR while obtaining connector to database",self.db_cursor)
-            return
+        #connect to db server and get cursor
+        connect_to_db_return=self.connect_to_db(None,None)
+        if connect_to_db_return != True:
+            #display error and exit function
+            print("[Error:database connection],not connecting to reactions table")
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
+            return False
         #create database
-        self.setup_database(self.db_cursor)
+        create_db_return=self.create_db(self.db_cursor)
+        if create_db_return != True:
+            #display error in main_menu page message box and exit the function
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
+            return False
         #create reactions table
-        self.create_reactions_table(self.db_cursor)
+        create_reactions_table_return=self.create_reactions_table(self.db_cursor)
+        if create_reactions_table_return != True:
+            #display error and exit function with return value as false
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_reactions_table_return))
+            return False
         #open reactions page
         self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
     def open_quiz_page(self,*args):
-        self.connect_to_db(None,None)
-        self.setup_database(self.db_cursor)
-        #close current window
-        self.open_page(None,pages.quiz_main_page)
-        #open quiz window
+        #database setup
+        self.connect_to_db("None","None")
+        self.create_db(self.db_cursor)
+
+        #open quiz.py quiz window
         quiz.main(self.database_object)
 
     #get monitor dimentions
@@ -138,9 +156,11 @@ class Application(Gtk.Application):
 
         app.window_history.append(page)
         app.window_history_size=len(app.window_history)
+        #solve back button window loop problem
         if app.window_history_size > 3 and app.window_history[-1] == app.window_history[-3]:
             app.window_history.pop()
             app.window_history.pop()
+        #trim window history if greater than limit
         if app.window_history_size>app.window_history_limit:
             del app.window_history[0]
 
@@ -158,44 +178,60 @@ class Application(Gtk.Application):
         try:
             self.database_object=mysql.connector.connect( **connection_profile)
         except mysql.connector.Error as err:
-            print("error while connecting to database server:",err)
+            message="Error while connecting to database: "+str(err)
+            if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+                message=f"Access denied for user {self.current_user_action.props.state.get_string()}"
+            print(message)
             return err
+        return True
     def get_cursor_from_db_connection(self,db_connection_object):
+        if db_connection_object == None:
+            print(f"cannot get cursor, no database connection obj")
+            return
         try:
-            db_cursor=db_connection_object.cursor()
+            self.db_cursor=db_connection_object.cursor()
         except mysql.connector.Error as err:
-            print("Error while creating cursor",err)
+            print(f"Error while getting cursor from database connection: {err}: Database_connection:{self.database_object.is_connected}")
             return err
-        return db_cursor
+        print("=>cursor connected")
+        return True
+
     def create_db(self,db_cursor):
         #create database
         try:
             db_cursor.execute(f'create database {self.db_name};')
-            print("CURSORRR: ",self.db_cursor, db_cursor)
         except mysql.connector.Error as err:
-            print("Error while CREATING database",err)
+            if err.errno == errorcode.ER_DB_CREATE_EXISTS:
+                #if database already exists
+                msg_str=f"=>database {self.db_name} found"
+                print(msg_str)
+            else:
+                print("Error while CREATING database",err)
+                return err
         #use database
         try:
             db_cursor.execute(f'use {self.db_name};')
-            print('using database')
         except mysql.connector.Error as err:
             print("Error while USING database",err)
-
+            return err
+        print(f'=>using database {self.db_name}')
+        return True
     def create_reactions_table(self,db_cursor):
         try:
             create_reactions_table_sql_command='''CREATE TABLE reactions(
-            reaction_entry_number int auto_increment primary key,
-            name varchar(255),
-            reactant varchar(255),
-            product varchar(255),
-            extra_info varchar(255));'''
+                reaction_entry_number int auto_increment primary key,
+                name varchar(255),
+                reactant varchar(255),
+                product varchar(255),
+                extra_info varchar(255));'''
             db_cursor.execute(create_reactions_table_sql_command)
         except mysql.connector.Error as err:
-            print("eror while creating table \"reactions\"", err)
-    def get_data_from_db(self,table_name,db_cursor):
-        db_data=db_cursor.execute(f'SELECT * FROM {table_name}')
-        print(db_data)
-        return db_data
+            if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+                print("=>reactions table found")
+                return True
+            else:
+                print("eror while creating table \"reactions\"", err)
+                return err
 
 #Create an instance of Application
 app=Application()
