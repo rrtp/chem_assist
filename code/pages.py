@@ -347,7 +347,7 @@ class main_menu_page(Gtk.ApplicationWindow):
 
         #button functions
         reactions_button.set_action_name('app.open_reactions_page')
-        quiz_button.set_action_name('app.open_quiz')
+        quiz_button.set_action_name('app.open_quiz_page')
         quit_button.set_action_name('app.quit')
         simulator_button.connect('clicked',self.props.application.open_page,simulator_page)
         settings_button.connect('clicked',self.props.application.open_page,settings_page)
@@ -431,8 +431,16 @@ class quiz_main_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Quiz main page")
         header_bar.set_titlebar(header_bar,self)
-        self.set_child(Gtk.Label.new("Quiz opened in new window"))
 
+        #main box
+        quiz_main_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
+        self.set_child(quiz_main_page_box)
+
+        #start quiz
+        start_quiz_button=Gtk.Button.new_with_label("Start quiz")
+        start_quiz_button.set_action_name('app.open_quiz')
+
+        quiz_main_page_box.append(start_quiz_button)
 class reaction_info(GObject.Object):
     def __init__(self,name,reactant,product,extra_info):
         super().__init__()
