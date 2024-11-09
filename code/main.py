@@ -76,8 +76,12 @@ class Application(Gtk.Application):
         self.current_user_action=Gio.SimpleAction.new_stateful("current_user",GLib.VariantType.new("s"),GLib.Variant.new_string("chem_assist_user"))
         self.add_action(self.current_user_action)
 
-        open_quiz_action=Gio.SimpleAction.new("open_quiz",None)
-        open_quiz_action.connect('activate',self.open_quiz_page)
+        open_quiz_page_action=Gio.SimpleAction.new("open_quiz_page",None)
+        open_quiz_page_action.connect('activate',self.open_quiz_page)
+        self.add_action(open_quiz_page_action)
+
+        open_quiz_action=Gio.SimpleAction.new('open_quiz',None)
+        open_quiz_action.connect('activate',self.open_quiz)
         self.add_action(open_quiz_action)
 
         self.connect_to_db_action=Gio.SimpleAction.new("connect_to_db",None)
@@ -127,12 +131,35 @@ class Application(Gtk.Application):
         self.open_page(None,pages.reactions_display_page)
 
     #Open quiz page
-    def open_quiz_page(self,*args):
+    def open_quiz_page(self,caller_action,param):
         #database setup
-        self.connect_to_db("None","None")
-        self.create_db(self.db_cursor)
-
+        connect_to_db_return=self.connect_to_db("None","None")
+        if connect_to_db_return != True:
+            #display error and exit function with return value as false
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
+            return False
+        create_db_return=self.create_db(self.db_cursor)
+        if create_db_return != True:
+            #display error and exit function with return value as false
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
+            return False
         #open quiz.py quiz window
+        self.open_page(None,pages.quiz_main_page)
+    def open_quiz(self,caller_action,param):
+        connect_to_db_return=self.connect_to_db("None","None")
+        if connect_to_db_return != True:
+            #display error and exit function with return value as false
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
+            return False
+        create_db_return=self.create_db(self.db_cursor)
+        if create_db_return != True:
+            #display error and exit function with return value as false
+            if self.window_history[-1] == pages.main_menu_page:
+                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
+            return False
         quiz.main(self.database_object)
 
     #get monitor dimentions
