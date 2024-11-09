@@ -303,23 +303,43 @@ class main_menu_page(Gtk.ApplicationWindow):
         super().__init__(*args,**kwargs,title="Chemistry assistant main page")
         self.props.name="main_menu_page"
         self.add_css_class("main_manu_page")
+
+        main_menu_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
+        self.set_child(main_menu_page_box)
+
+        #message box
+        message_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
+        message_box_scroller=Gtk.ScrolledWindow()
+        message_box_scroller.set_child(message_box)
+        #main menu buttons box
+        main_menu_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
+        main_menu_buttons_box.set_valign(Gtk.Align.CENTER)
+        main_menu_buttons_box.set_halign(Gtk.Align.CENTER)
+        #scroll for main menu buttons box
+        main_menu_buttons_box_scroller=Gtk.ScrolledWindow()
+        main_menu_buttons_box_scroller.set_child(main_menu_buttons_box)
+        main_menu_buttons_box_scroller.set_propagate_natural_height(True)
+
+        main_menu_page_box.append(message_box_scroller)
+        main_menu_page_box.append(main_menu_buttons_box_scroller)
+
+        #message label
+        self.main_menu_message_box_label=Gtk.Label.new()
+        message_box.append(self.main_menu_message_box_label)
+
         #buttons
         reactions_button=Gtk.Button.new_with_label("Reactions")
         quiz_button=Gtk.Button.new_with_label("Quiz")
         quit_button=Gtk.Button.new_with_label("Quit")
         simulator_button=Gtk.Button.new_with_label("Simulate")
         settings_button=Gtk.Button.new_with_label("Settings")
-        #main menu buttons box
-        main_menu_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
-        main_menu_buttons_box.set_valign(Gtk.Align.CENTER)
-        main_menu_buttons_box.set_halign(Gtk.Align.CENTER)
-        #buttons in box
+
+        #add buttons to box
         main_menu_buttons_box.append(reactions_button)
         main_menu_buttons_box.append(quiz_button)
         main_menu_buttons_box.append(simulator_button)
         main_menu_buttons_box.append(settings_button)
         main_menu_buttons_box.append(quit_button)
-        self.set_child(main_menu_buttons_box)
 
         #css
         main_menu_buttons_box.add_css_class("main_menu_buttons_box")
@@ -413,13 +433,14 @@ class quiz_main_page(Gtk.ApplicationWindow):
         header_bar.set_titlebar(header_bar,self)
         self.set_child(Gtk.Label.new("Quiz opened in new window"))
 
-class reactions_list(GObject.Object):
+class reaction_info(GObject.Object):
     def __init__(self,name,reactant,product,extra_info):
         super().__init__()
         self.name=name
-        self.reactant=reactant
-        self.product=product
+        self.reactants=reactant
+        self.products=product
         self.extra_info=extra_info
+
 #Reactions page
 class reactions_display_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
@@ -435,13 +456,16 @@ class reactions_display_page(Gtk.ApplicationWindow):
         elif self.props.application.database_object.is_connected():
             title_message=title_message[:-1]+",database:"+self.props.application.db_name+")"
         self.set_title(title_message)
-
         #titlebar
         header_bar.set_titlebar(header_bar,self)
+
+        reactions_page_box_scroller=Gtk.ScrolledWindow.new()
+        self.set_child(reactions_page_box_scroller)
         #boxes
         reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_box.set_homogeneous(True)
-        self.set_child(reactions_page_box)
+        reactions_page_box_scroller.set_child(reactions_page_box)
+        #self.set_child(reactions_page_box)
 
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
@@ -453,48 +477,120 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_page_bottom_panel_box.set_valign(Gtk.Align.END)
         reactions_page_bottom_panel_box.set_halign(Gtk.Align.END)
 
-        #list panel
-        #model
-        self.reactions_list=Gio.ListStore.new(reactions_list)
+        ##reactions list
+        #list storage
+        self.reactions_list=Gio.ListStore.new(reaction_info)
         self.reactions_list_multiselection=Gtk.MultiSelection.new(self.reactions_list)
 
-        #columns
-        name_column_signal_tracker=Gtk.SignalListItemFactory.new()
-        name_column=Gtk.ColumnViewColumn.new("name",name_column_signal_tracker)
+        #name column
+        name_column_signal_factory=Gtk.SignalListItemFactory.new()
+        name_column=Gtk.ColumnViewColumn.new("name",name_column_signal_factory)
+        #reactants column
+        reactants_column_signal_factory=Gtk.SignalListItemFactory.new()
+        reactants_column=Gtk.ColumnViewColumn.new("reactants",reactants_column_signal_factory)
+        #products column
+        products_column_signal_factory=Gtk.SignalListItemFactory.new()
+        products_column=Gtk.ColumnViewColumn.new("products",products_column_signal_factory)
+        #extra info column
+        extra_info_column_signal_factory=Gtk.SignalListItemFactory.new()
+        extra_info_column=Gtk.ColumnViewColumn.new("extra_info",extra_info_column_signal_factory)
+        extra_info_column.props.resizable=True
+        #fetch data from database and add it to reactions list
+        self.add_reactions_data_to_list()
 
-        reactants_column_signal_tracker=Gtk.SignalListItemFactory.new()
-        reactants_column=Gtk.ColumnViewColumn.new("reactants",reactants_column_signal_tracker)
+        #display items
+        name_column_signal_factory.connect("setup",self.add_label_to_column)
+        reactants_column_signal_factory.connect("setup",self.add_label_to_column)
+        products_column_signal_factory.connect("setup",self.add_label_to_column)
+        extra_info_column_signal_factory.connect("setup",self.add_label_to_column)
 
-        products_column_signal_tracker=Gtk.SignalListItemFactory.new()
-        products_column=Gtk.ColumnViewColumn.new("products",products_column_signal_tracker)
+        name_column_signal_factory.connect("bind",self.set_column_cell_label,1)
+        reactants_column_signal_factory.connect("bind",self.set_column_cell_label,2)
+        products_column_signal_factory.connect("bind",self.set_column_cell_label,3)
+        extra_info_column_signal_factory.connect("bind",self.set_column_cell_label,4)
 
-        extra_info_column_signal_tracker=Gtk.SignalListItemFactory.new()
-        extra_info_column=Gtk.ColumnViewColumn.new("extra_info",extra_info_column_signal_tracker)
+        name_column_signal_factory.connect("unbind",self.remove_element_from_column)
+        reactants_column_signal_factory.connect("unbind",self.remove_element_from_column)
+        products_column_signal_factory.connect("unbind",self.remove_element_from_column)
+        extra_info_column_signal_factory.connect("unbind",self.remove_element_from_column)
 
-        #bottom panel
+        #create column view
+        reactions_list=Gtk.ColumnView.new(self.reactions_list_multiselection)
+        reactions_list.append_column(name_column)
+        reactions_list.append_column(reactants_column)
+        reactions_list.append_column(products_column)
+        reactions_list.append_column(extra_info_column)
+
+        #add to box
+        reactions_list_box.append(reactions_list)
+        ##bottom panel
+        refresh_button=Gtk.Button.new_with_label("Refresh")
         reactions_db_import_button=Gtk.Button.new_with_label("Import")
         reactions_db_export_button=Gtk.Button.new_with_label("Export")
         reactions_db_add_button=Gtk.Button.new_with_label("Add")
 
+        reactions_page_bottom_panel_box.append(refresh_button)
         reactions_page_bottom_panel_box.append(reactions_db_import_button)
         reactions_page_bottom_panel_box.append(reactions_db_export_button)
         reactions_page_bottom_panel_box.append(reactions_db_add_button)   
 
+        refresh_button.connect('activate',self.refresh_reactions_list)
         reactions_db_add_button.connect('clicked',self.add_reaction_to_db)
+    def refresh_reactions_list(self,caller_obj):
+        pass
+    def add_label_to_column(self,caller_factory,column_cell):
+        column_cell.set_child(Gtk.Label.new())
+    def set_column_cell_label(self,caller_factory,column_cell,column_number):
+        #cell label
+        label=column_cell.get_child()
+        #cell position
+        cell_position=column_cell.get_position()
+        #reactions list
+        reactions_list=self.reactions_list_multiselection.get_model()
+        #reaction object
+        reaction_details=reactions_list[cell_position]
+        column_num_to_column_val_dict={
+            1:reaction_details.name,
+            2:reaction_details.reactants,
+            3:reaction_details.products,
+            4:reaction_details.extra_info
+        }
+        label_text=column_num_to_column_val_dict[column_number]
+        #set entry value
+        column_cell.get_child().set_text(label_text)
+    def remove_element_from_column(self,caller_factory,column_cell):
+        pass
+
+    #add reaction to reactions table
     def add_reaction_to_db(self,caller_obj):
         self.props.application.open_page(None,add_reaction_to_db_page)
+    
+    #get reactions from reactions table and add them to list
+    def add_reactions_data_to_list(self):
+        get_data_from_reactions_table_command="select * from reactions"
+        #get reactions data from database
+        self.props.application.db_cursor.execute(get_data_from_reactions_table_command)
+        reactions_list=self.props.application.db_cursor.fetchall()
+        #reaction list to gobject, append to list
+        for reaction in reactions_list:
+            reaction_gobject=reaction_info(reaction[1],reaction[2],reaction[3],reaction[4])
+            self.reactions_list.append(reaction_gobject)
+            # for i in range(self.reactions_list.get_n_items()):
+            #     print(self.reactions_list.get_item(i).name)
+
+#add reactions to table page
 class add_reaction_to_db_page(Gtk.ApplicationWindow):
-    def __init__(self,*args,**kwargs):
+    def __init__(self,reaction_information=["","","",""],*args,**kwargs):
         super().__init__(*args,**kwargs,title="Add reaction to database")
         header_bar.set_titlebar(header_bar,self)
 
         main_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         self.set_child(main_box)
 
-        reactant_entry_buffer=Gtk.EntryBuffer.new(None,-1)
-        name_entry_buffer=Gtk.EntryBuffer.new(None,-1)
-        product_entry_buffer=Gtk.EntryBuffer.new(None,-1)
-        extra_info_entry_buffer=Gtk.EntryBuffer.new(None,-1)
+        reactant_entry_buffer=Gtk.EntryBuffer.new(reaction_information[0],-1)
+        name_entry_buffer=Gtk.EntryBuffer.new(reaction_information[1],-1)
+        product_entry_buffer=Gtk.EntryBuffer.new(reaction_information[2],-1)
+        extra_info_entry_buffer=Gtk.EntryBuffer.new(reaction_information[3],-1)
         
         reactant_entry=Gtk.Entry.new_with_buffer(reactant_entry_buffer)
         name_entry=Gtk.Entry.new_with_buffer(name_entry_buffer)
