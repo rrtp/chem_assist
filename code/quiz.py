@@ -7,7 +7,7 @@ def create_tables(connection):
     # Create tables if they don't exist
     with connection.cursor() as cursor:
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS quiz_users (
                 user_id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 score INT NOT NULL
@@ -51,7 +51,7 @@ def add_sample_questions(connection):
 def show_results(user_name, score, total_questions, connection):
     # Store user score in the database
     with connection.cursor() as cursor:
-        cursor.execute('INSERT INTO users (name, score) VALUES (%s, %s)', (user_name, score))
+        cursor.execute('INSERT INTO quiz_users (name, score) VALUES (%s, %s)', (user_name, score))
     connection.commit()
 
     # Clear the main window and show results
@@ -73,7 +73,7 @@ def show_results(user_name, score, total_questions, connection):
     home_button = tk.Button(root, text="Home", command=reset_app, bg="#0288d1", fg="white", font=("Arial", 12))
     home_button.pack(pady=10)
 
-    exit_button = tk.Button(root, text="Exit", command=root.quit, bg="#f44336", fg="white", font=("Arial", 12))
+    exit_button = tk.Button(root, text="Exit", command=close_window, bg="#f44336", fg="white", font=("Arial", 12))
     exit_button.pack(pady=10)
 
 def show_report(connection):
@@ -90,7 +90,7 @@ def show_report(connection):
 
     # Fetch user scores from the database
     cursor = connection.cursor()
-    cursor.execute('SELECT name, score FROM users')
+    cursor.execute('SELECT name, score FROM quiz_users')
     for row in cursor.fetchall():
         tree.insert("", tk.END, values=row)
 
@@ -185,7 +185,7 @@ def reset_app():
     exit_button = tk.Button(root, text="Exit", command=close_window, font=("Arial", 12), bg="#f44336", fg="white")
     exit_button.pack(pady=10)
 def close_window():
-    root.quit()
+    root.destroy()
 def main(db_connection_object):
     global root, connection
     # Connect to the database and create tables
@@ -206,6 +206,3 @@ def main(db_connection_object):
 
     # Close the database connection when the program ends
     connection.close()
-
-if __name__ == '__main__':
-    main()
