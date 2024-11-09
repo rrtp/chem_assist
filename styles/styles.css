@@ -39,11 +39,15 @@ button:active{
 }
 label{
     color:rgb(244, 209, 209);
-    font-size: x-large;
+    font-size: xx-large;
 }
 entry{
     background: rgba(18, 208, 255, 0.275);
     border:None;
     border-radius: 10px;
     padding-right:150px;
+}
+columnview{
+    background-color: rgba(139, 69, 19, 0);
+    color:rgb(209, 118, 0);
 }
