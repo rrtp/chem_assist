@@ -26,21 +26,21 @@ class header_bar(Gtk.HeaderBar):
         if settings==True:
             #settings button
             self.settings_button=Gtk.Button.new()
-            settings_button_image=Gtk.Image.new_from_file(page.props.application.settings_image_path)
+            settings_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["settings"])
             self.settings_button.set_child(settings_button_image)
             #add to headerbar
             page.props.titlebar.pack_end(page.props.titlebar.settings_button)
             page.props.titlebar.settings_button.connect('clicked',page.props.application.open_page,settings_page)
-            self.settings_button.add_css_class("headerbar")
+            self.settings_button.add_css_class("iconbutton")
         if back_button==True:
             #back button
             self.back_button=Gtk.Button.new()
-            back_button_image=Gtk.Image.new_from_file(page.props.application.back_image_path)
+            back_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["back"])
             self.back_button.set_child(back_button_image)
             #add to headerbar
             page.props.titlebar.back_button.connect('clicked',page.props.application.open_page,page.props.application.window_history[-2])
             page.props.titlebar.pack_start(page.props.titlebar.back_button)
-            self.back_button.add_css_class("headerbar")
+            self.back_button.add_css_class("iconbutton")
 
 #welcome page
 class welcome_page(Gtk.ApplicationWindow):
@@ -337,7 +337,7 @@ class main_menu_page(Gtk.ApplicationWindow):
         #add buttons to box
         main_menu_buttons_box.append(reactions_button)
         main_menu_buttons_box.append(quiz_button)
-        main_menu_buttons_box.append(simulator_button)
+        #main_menu_buttons_box.append(simulator_button)
         main_menu_buttons_box.append(settings_button)
         main_menu_buttons_box.append(quit_button)
 
@@ -451,8 +451,26 @@ class reaction_info(GObject.Object):
 
 #Reactions page
 class reactions_display_page(Gtk.ApplicationWindow):
+    pull_data_from_reactions_table=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
+        ##db
+        #connect to database server, create database and set it as current database
+        connect_to_db_server_and_create_db_return=self.props.application.connect_to_db_server_and_create_db()
+        #create reactions table
+        create_reactions_table_return=False
+        if connect_to_db_server_and_create_db_return==True:
+            #creating the table
+            create_reactions_table_return=self.props.application.create_reactions_table(self.props.application.db_cursor)
+            #if reactions table connection exists, then only take data from there
+            if create_reactions_table_return==True:
+                self.pull_data_from_reactions_table=True
+            else:
+                #display error and exit function with return value as false
+                if self.props.application.window_history[-1] == main_menu_page:
+                    self.props.application.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_reactions_table_return))
+                print("could not create reactions table")
+
         ##title
         title_message="Reactions"
         #user
@@ -467,6 +485,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #titlebar
         header_bar.set_titlebar(header_bar,self)
 
+        ##layout
         reactions_page_box_scroller=Gtk.ScrolledWindow.new()
         self.set_child(reactions_page_box_scroller)
         #boxes
@@ -479,16 +498,26 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
 
         reactions_page_box.append(reactions_list_box)
-        reactions_page_box.append(reactions_page_bottom_panel_box)
+        if self.pull_data_from_reactions_table == True:
+            reactions_page_box.append(reactions_page_bottom_panel_box)
 
         #box properties
+        reactions_page_box.set_halign(Gtk.Align.FILL)
         reactions_page_bottom_panel_box.set_valign(Gtk.Align.END)
-        reactions_page_bottom_panel_box.set_halign(Gtk.Align.END)
-
+        reactions_page_bottom_panel_box.set_halign(Gtk.Align.CENTER)
+        
         ##reactions list
         #list storage
         self.reactions_list=Gio.ListStore.new(reaction_info)
         self.reactions_list_multiselection=Gtk.MultiSelection.new(self.reactions_list)
+
+        #fetch data from database and add it to reactions list
+        if self.pull_data_from_reactions_table==True:
+            self.add_reactions_data_to_list()
+        #if there is not database connection, display message
+        if self.pull_data_from_reactions_table==False:
+            no_connection_message=Gtk.Label.new("No database connection!")
+            Gtk.Box.insert_child_after(reactions_page_box,no_connection_message,reactions_page_box.get_first_child())
 
         #name column
         name_column_signal_factory=Gtk.SignalListItemFactory.new()
@@ -503,8 +532,6 @@ class reactions_display_page(Gtk.ApplicationWindow):
         extra_info_column_signal_factory=Gtk.SignalListItemFactory.new()
         extra_info_column=Gtk.ColumnViewColumn.new("extra_info",extra_info_column_signal_factory)
         extra_info_column.props.resizable=True
-        #fetch data from database and add it to reactions list
-        self.add_reactions_data_to_list()
 
         #display items
         name_column_signal_factory.connect("setup",self.add_label_to_column)
@@ -523,29 +550,45 @@ class reactions_display_page(Gtk.ApplicationWindow):
         extra_info_column_signal_factory.connect("unbind",self.remove_element_from_column)
 
         #create column view
-        reactions_list=Gtk.ColumnView.new(self.reactions_list_multiselection)
-        reactions_list.append_column(name_column)
-        reactions_list.append_column(reactants_column)
-        reactions_list.append_column(products_column)
-        reactions_list.append_column(extra_info_column)
+        self.reactions_column_manager=Gtk.ColumnView.new(self.reactions_list_multiselection)
+        self.reactions_column_manager.append_column(name_column)
+        self.reactions_column_manager.append_column(reactants_column)
+        self.reactions_column_manager.append_column(products_column)
+        self.reactions_column_manager.append_column(extra_info_column)
 
         #add to box
-        reactions_list_box.append(reactions_list)
+        reactions_list_box.append(self.reactions_column_manager)
+
         ##bottom panel
         refresh_button=Gtk.Button.new_with_label("Refresh")
         reactions_db_import_button=Gtk.Button.new_with_label("Import")
         reactions_db_export_button=Gtk.Button.new_with_label("Export")
         reactions_db_add_button=Gtk.Button.new_with_label("Add")
 
+        #button properties
+        refresh_button_image=Gtk.Image.new_from_file(self.props.application.image_paths["refresh"])
+        refresh_button.set_child(refresh_button_image)
+        #add button to bottom panel
         reactions_page_bottom_panel_box.append(refresh_button)
         reactions_page_bottom_panel_box.append(reactions_db_import_button)
         reactions_page_bottom_panel_box.append(reactions_db_export_button)
         reactions_page_bottom_panel_box.append(reactions_db_add_button)   
-
+        #button functions
         refresh_button.connect('activate',self.refresh_reactions_list)
         reactions_db_add_button.connect('clicked',self.add_reaction_to_db)
     def refresh_reactions_list(self,caller_obj):
-        pass
+        reactions_list=self.reactions_list_multiselection.get_model()
+        #clear list
+        reactions_list.remove_all()
+        #add data to list
+        self.add_reactions_data_to_list()
+
+        columns=self.reactions_column_manager.get_columns()
+        for column_number in range(columns.get_n_items()):
+            columns[column_number].get_factory().emit("unbind")
+        for column_number in range(columns.get_n_items()):
+            columns[column_number].get_factory().emit("bind")
+        print("[reactions display page]refreshed columns")
     def add_label_to_column(self,caller_factory,column_cell):
         column_cell.set_child(Gtk.Label.new())
     def set_column_cell_label(self,caller_factory,column_cell,column_number):
@@ -567,7 +610,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #set entry value
         column_cell.get_child().set_text(label_text)
     def remove_element_from_column(self,caller_factory,column_cell):
-        pass
+        column_cell.get_child().set_text("")
 
     #add reaction to reactions table
     def add_reaction_to_db(self,caller_obj):
