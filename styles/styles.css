@@ -15,8 +15,8 @@ button {
     border:none;
     background: rgba(30, 115, 9, 0.92);
 }
-button.headerbar{
-    background: rgba(22, 148, 22, 0);
+button.iconbutton{
+    background: rgba(255, 255, 255, 0);
 }
 button.settings_categories_box{
     border-radius: 5px;
@@ -50,4 +50,7 @@ entry{
 columnview{
     background-color: rgba(139, 69, 19, 0);
     color:rgb(209, 118, 0);
+}
+listview{
+    background-color: rgba(240, 248, 255, 0);
 }
