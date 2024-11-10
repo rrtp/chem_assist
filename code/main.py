@@ -11,13 +11,6 @@ ui_dir="ui_definitions/"
 db_dir="databases/"
 pics_dir="pictures/"
 
-#picstures paths
-image_paths={
-    "settings":pics_dir+"settings.svg",
-    "back":pics_dir+"back.svg",
-    "app":pics_dir+"app_image.svg"
-}
-
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
     #window history
@@ -42,10 +35,13 @@ class Application(Gtk.Application):
     current_user=""
     users={"chem_assist_user":"chem_assist_user_password"}
 
-    #images
-    settings_image_path=image_paths["settings"]
-    back_image_path=image_paths["back"]
-    app_image_path=image_paths["app"]
+    #images paths
+    image_paths={
+        "settings":pics_dir+"settings.svg",
+        "back":pics_dir+"back.svg",
+        "app":pics_dir+"app_image.svg",
+        "refresh":pics_dir+"refresh_button.svg"
+    }
 
     reactions_table_columns=("name","reactant","product","extra_info")
     #constructor
@@ -68,7 +64,6 @@ class Application(Gtk.Application):
         quit_action.connect('activate',self.close_page)
         self.add_action(quit_action)
         
-
         open_reactions_page_action=Gio.SimpleAction.new("open_reactions_page",None)
         open_reactions_page_action.connect('activate',self.on_open_reactions_page)
         self.add_action(open_reactions_page_action)
@@ -104,33 +99,28 @@ class Application(Gtk.Application):
             return return_value_from_get_cursor
         return True
     #reactions page open
-    def on_open_reactions_page(self,caller_obj,arg3):
+    def on_open_reactions_page(self,caller_action,param):
+
+        #open reactions page
+        self.open_page(None,pages.reactions_display_page)
+    def connect_to_db_server_and_create_db(self):
         #connect to db server and get cursor
         connect_to_db_return=self.connect_to_db(None,None)
         if connect_to_db_return != True:
             #display error and exit function
-            print("[Error:database connection],not connecting to reactions table")
+            print("[Error:database connection]")
             if self.window_history[-1] == pages.main_menu_page:
                 self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
-            return False
+            return connect_to_db_return
         #create database
         create_db_return=self.create_db(self.db_cursor)
         if create_db_return != True:
             #display error in main_menu page message box and exit the function
             if self.window_history[-1] == pages.main_menu_page:
                 self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
-            return False
-        #create reactions table
-        create_reactions_table_return=self.create_reactions_table(self.db_cursor)
-        if create_reactions_table_return != True:
-            #display error and exit function with return value as false
-            if self.window_history[-1] == pages.main_menu_page:
-                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_reactions_table_return))
-            return False
-        #open reactions page
-        self.open_page(None,pages.reactions_display_page)
-
-    #Open quiz page
+            return create_db_return
+        return True
+    #open quiz page
     def open_quiz_page(self,caller_action,param):
         #database setup
         connect_to_db_return=self.connect_to_db("None","None")
@@ -235,6 +225,7 @@ class Application(Gtk.Application):
             else:
                 print("Error while CREATING database",err)
                 return err
+            print(f"=>created database {self.db_name}")
         #use database
         try:
             db_cursor.execute(f'use {self.db_name};')
@@ -259,7 +250,8 @@ class Application(Gtk.Application):
             else:
                 print("eror while creating table \"reactions\"", err)
                 return err
-
+        print("=>created table 'reactions'")
+        return True
 #Create an instance of Application
 app=Application()
 app.run(None)
