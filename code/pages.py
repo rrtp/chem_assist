@@ -753,6 +753,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
 
     #add reaction to reactions table
     def add_reaction_to_db(self,caller_obj):
+        add_reaction_to_db_page.reaction_information=["","","",""]
         self.props.application.open_page(None,add_reaction_to_db_page)
     
     #get reactions from reactions table and add them to list
@@ -775,13 +776,10 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Add reaction to database")
         header_bar.set_titlebar(header_bar,self)
-        self.mode="add"
         #set window mode
-        print(self.reaction_information)
         for detail in self.reaction_information:
             if detail != "":
                 self.mode="edit"
-        print(self.mode)
 
         main_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         self.set_child(main_box)
@@ -855,21 +853,24 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
                     reaction_not_edited=False
                     #add to the edit command
                 reactions_table_command_string=reactions_table_command_string+f" {columns[i]}='{edited_reaction_information[i]}',"
+            
             #exit if reaction is unedited
             if reaction_not_edited==True:
                 #open previous window
                 previous_window=self.props.application.window_history[-2]
                 self.props.application.open_page(None,previous_window)
                 return
+
             #identify the reaction with name
             reactions_table_command_string=reactions_table_command_string[:-1]+f" where name='{self.reaction_information[0]}';"
         #send command to database
+        print(reactions_table_command_string)
         try:
-            print(reactions_table_command_string)
             self.props.application.db_cursor.execute(reactions_table_command_string)
             self.props.application.database_object.commit()
         except mysql.connector.Error as err:
                 print(f"Error while {self.mode}ing reactions details to table:\n",err)
+        
         #open previous window
         previous_window=self.props.application.window_history[-2]
         self.props.application.open_page(None,previous_window)
