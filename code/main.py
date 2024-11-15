@@ -103,18 +103,14 @@ class Application(Gtk.Application):
         connect_to_db_return=self.connect_to_db("None","None")
         if connect_to_db_return != True:
             #display error and exit function with return value as false
-            if self.window_history[-1] == pages.main_menu_page:
-                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
-            if self.window_history[-1]==pages.quiz_main_page:
-                self.props.active_window.message_box_label.set_text("database connection Error:"+str(connect_to_db_return))
+            if self.window_history[-1].message_box==True:
+                self.props.active_window.message_label.set_text("database connection Error:"+str(connect_to_db_return))
             return connect_to_db_return
         create_db_return=self.create_db(self.db_cursor)
         if create_db_return != True:
             #display error and exit function with return value as false
-            if self.window_history[-1] == pages.main_menu_page:
-                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
-            if self.window_history[-1]==pages.quiz_main_page:
-                self.props.active_window.message_box_label.set_text("creating database error:"+str(create_db_return))
+            if self.window_history[-1].message_box==True:
+                self.props.active_window.message_label.set_text("creating database error:"+str(create_db_return))
             return create_db_return
         #open quiz.py quiz page
         quiz.main(self.database_object)
@@ -164,15 +160,15 @@ class Application(Gtk.Application):
         if connect_to_db_return != True:
             #display error and exit function
             print("[Error:database connection]")
-            if self.window_history[-1] == pages.main_menu_page:
-                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(connect_to_db_return))
+            if self.window_history[-1].message_box==True:
+                self.props.active_window.message_label.set_text("Error: "+str(connect_to_db_return))
             return connect_to_db_return
         #create database
         create_db_return=self.create_db(self.db_cursor)
         if create_db_return != True:
             #display error in main_menu page message box and exit the function
-            if self.window_history[-1] == pages.main_menu_page:
-                self.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_db_return))
+            if self.window_history[-1].message_box==True:
+                self.props.active_window.message_label.set_text("Error: "+str(create_db_return))
             return create_db_return
         return True
 
@@ -248,8 +244,7 @@ class Application(Gtk.Application):
         col_max_len=self.reactions_column_string_max_length
         try:
             create_reactions_table_sql_command=f'''CREATE TABLE reactions(
-                reaction_entry_number int auto_increment primary key,
-                name varchar({col_max_len}),
+                name varchar({col_max_len}) primary key,
                 reactants varchar({col_max_len}),
                 products varchar({col_max_len}),
                 extra_info varchar({col_max_len}));'''
