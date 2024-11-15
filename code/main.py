@@ -36,7 +36,7 @@ class Application(Gtk.Application):
     reactions_column_string_max_length=255
 
     #users
-    users={"chem_assist_user":"chem_assist_user_password"}
+    users={'':'',"chem_assist_user":"chem_assist_user_password"}
 
     #images paths
     image_paths={
@@ -195,7 +195,7 @@ class Application(Gtk.Application):
         print(f'=>using database {self.db_name}')
         return True
 
-    #connect to db
+    #connect to db and get cursor
     def connect_to_db(self,caller_action,parameter):
         #connect to server
         return_value_from_connect=self.connect_to_db_server()

@@ -296,6 +296,8 @@ class settings_page(Gtk.ApplicationWindow):
         button0.set_action_target_value(GLib.Variant.new_string(""))
         self.users_buttons_box.append(button0)
         for user_name in self.props.application.users.keys():
+            if user_name=="":
+                continue
             button=Gtk.CheckButton.new_with_label(user_name)
             button.set_group(button0)
             button.set_action_name('win.current_user_button')
@@ -523,10 +525,11 @@ class quiz_main_page(Gtk.ApplicationWindow):
 class reactions_display_page(Gtk.ApplicationWindow):
     message_box=True
     message_label=Gtk.Label.new()
-
     pull_data_from_reactions_table=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
+    
+        self.message_label=Gtk.Label.new(self.message_label.get_label())
         ##db
         #connect to database server, create database and set it as current database
         connect_to_db_server_and_create_db_return=self.props.application.connect_to_db_server_and_create_db()
@@ -547,7 +550,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         ##title
         title_message="Reactions"
         #user
-        if self.props.application.current_user_action.props.state.get_string()!=None:
+        if self.props.application.current_user_action.props.state.get_string()!="":
             title_message=title_message+" (user:"+self.props.application.current_user_action.props.state.get_string()+")"
         #database
         if self.pull_data_from_reactions_table == False:
@@ -580,9 +583,10 @@ class reactions_display_page(Gtk.ApplicationWindow):
 
         #add to page
         reactions_page_box.append(reactions_list_box)
+        reactions_page_box.append(message_box_scroll)
         if self.pull_data_from_reactions_table == True:
             reactions_page_box.append(reactions_page_bottom_panel_box)
-        reactions_page_box.append(message_box_scroll)
+
         #box properties
         reactions_page_box.set_halign(Gtk.Align.FILL)
 
