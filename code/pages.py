@@ -346,6 +346,7 @@ class settings_page(Gtk.ApplicationWindow):
 
 #main menu page
 class main_menu_page(Gtk.ApplicationWindow):
+    message_box=True
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Chemistry assistant main page")
         self.props.name="main_menu_page"
@@ -375,8 +376,8 @@ class main_menu_page(Gtk.ApplicationWindow):
         main_menu_page_box.append(main_menu_buttons_box_scroller)
 
         #message label
-        self.main_menu_message_box_label=Gtk.Label.new()
-        message_box.append(self.main_menu_message_box_label)
+        self.message_label=Gtk.Label.new()
+        message_box.append(self.message_label)
 
         #buttons
         reactions_button=Gtk.Button.new_with_label("Reactions")
@@ -486,6 +487,7 @@ class login_page(Gtk.ApplicationWindow):
 
 #quiz page
 class quiz_main_page(Gtk.ApplicationWindow):
+    message_box=True
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Quiz main page")
         header_bar.set_titlebar(header_bar,self)
@@ -497,24 +499,31 @@ class quiz_main_page(Gtk.ApplicationWindow):
         #message box
         self.message_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         #message box message
-        self.message_box_label=Gtk.Label.new()
-        self.message_box.append(self.message_box_label)
+        self.message_label=Gtk.Label.new()
+        self.message_box.append(self.message_label)
         #message box scroll
         message_box_scroll=Gtk.ScrolledWindow.new()
         message_box_scroll.set_child(self.message_box)
         #buttons
         start_quiz_button=Gtk.Button.new_with_label("Start quiz")
         #button properties
-        start_quiz_button.set_valign(Gtk.Align.CENTER)
+        start_quiz_button.set_vexpand(True)
+        start_quiz_button.add_css_class("start_quiz_button")
+
         #button function
+        #start the quiz
         start_quiz_button.set_action_name('app.open_quiz')
 
         #add to main page
-        quiz_main_page_box.append(start_quiz_button)
         quiz_main_page_box.append(message_box_scroll)
+        quiz_main_page_box.append(start_quiz_button)
+
 
 #Reactions page
 class reactions_display_page(Gtk.ApplicationWindow):
+    message_box=True
+    message_label=Gtk.Label.new()
+
     pull_data_from_reactions_table=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
@@ -531,8 +540,8 @@ class reactions_display_page(Gtk.ApplicationWindow):
                 self.pull_data_from_reactions_table=True
             else:
                 #display error and exit function with return value as false
-                if self.props.application.window_history[-1] == main_menu_page:
-                    self.props.application.props.active_window.main_menu_message_box_label.set_text("Error: "+str(create_reactions_table_return))
+                if self.props.application.window_history[-1].message_box==True:
+                    self.props.application.props.active_window.message_label.set_text("Error: "+str(create_reactions_table_return))
                 print("could not create reactions table")
 
         ##title
@@ -541,7 +550,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         if self.props.application.current_user_action.props.state.get_string()!=None:
             title_message=title_message+" (user:"+self.props.application.current_user_action.props.state.get_string()+")"
         #database
-        if self.props.application.db_cursor == None:
+        if self.pull_data_from_reactions_table == False:
             title_message=title_message+"(no db connection)"
         elif self.props.application.database_object.is_connected():
             title_message=title_message[:-1]+",database:"+self.props.application.db_name+")"
@@ -550,19 +559,30 @@ class reactions_display_page(Gtk.ApplicationWindow):
         header_bar.set_titlebar(header_bar,self)
 
         ##layout
+        #scroll
         reactions_page_box_scroller=Gtk.ScrolledWindow.new()
         self.set_child(reactions_page_box_scroller)
+
+        message_box_scroll=Gtk.ScrolledWindow.new()
+
         #boxes
         reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
-        reactions_page_box_scroller.set_child(reactions_page_box)
-
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
+        message_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
 
+        #message label
+        message_box.append(self.message_label)
+
+        #add scroll support
+        reactions_page_box_scroller.set_child(reactions_page_box)
+        message_box_scroll.set_child(message_box)
+
+        #add to page
         reactions_page_box.append(reactions_list_box)
         if self.pull_data_from_reactions_table == True:
             reactions_page_box.append(reactions_page_bottom_panel_box)
-
+        reactions_page_box.append(message_box_scroll)
         #box properties
         reactions_page_box.set_halign(Gtk.Align.FILL)
 
@@ -630,30 +650,33 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_list_box.append(self.reactions_column_manager)
 
         ##bottom panel
-        refresh_button=Gtk.Button.new_with_label("Refresh")
+        self.refresh_button=Gtk.Button.new_with_label("Refresh")
         reactions_db_import_button=Gtk.Button.new_with_label("Import")
         reactions_db_export_button=Gtk.Button.new_with_label("Export")
         reactions_db_add_button=Gtk.Button.new_with_label("Add")
         reaction_edit_button=Gtk.Button.new_with_label("edit")
         reaction_remove_button=Gtk.Button.new_with_label("delete")
 
-        #button properties
-        #refresh_button_image=Gtk.Image.new_from_file(self.props.application.image_paths["refresh"])
-        #refresh_button.set_child(refresh_button_image)
         #add button to bottom panel
-        reactions_page_bottom_panel_box.append(refresh_button)
+        reactions_page_bottom_panel_box.append(self.refresh_button)
         reactions_page_bottom_panel_box.append(reaction_edit_button)
         reactions_page_bottom_panel_box.append(reaction_remove_button)
-        reactions_page_bottom_panel_box.append(reactions_db_import_button)
-        reactions_page_bottom_panel_box.append(reactions_db_export_button)
-        reactions_page_bottom_panel_box.append(reactions_db_add_button)   
+        reactions_page_bottom_panel_box.append(reactions_db_add_button)
+        #reactions_page_bottom_panel_box.append(reactions_db_import_button)
+        #reactions_page_bottom_panel_box.append(reactions_db_export_button)
+        
+        
         #button functions
-        refresh_button.connect('clicked',self.refresh_reactions_list)
+        self.refresh_button.connect('clicked',self.refresh_reactions_list)
         reaction_edit_button.connect('clicked',self.edit_selected_reaction)
-        reaction_remove_button.connect('clicked',self.remove_selected_reaction_from_reactions_list)
+        reaction_remove_button.connect('clicked',self.remove_selected_reaction)
         reactions_db_add_button.connect('clicked',self.add_reaction_to_db)
         #edit row function
         self.reactions_column_manager.connect('activate',self.edit_row)
+
+        # #add image to refresh button
+        # refresh_button_image=Gtk.Image.new_from_file(self.props.application.image_paths["refresh"])
+        # self.refresh_button.set_child(refresh_button_image)
     def edit_selected_reaction(self,caller_obj):
         #open edit row page if a row is selected
         selected_row_number=self.reactions_list_single_selection.props.selected
@@ -662,10 +685,17 @@ class reactions_display_page(Gtk.ApplicationWindow):
         else:
             print(f"No row selected(selected row:{selected_row_number})")
     #remove selected reaction from reactions list
-    def remove_selected_reaction_from_reactions_list(self,caller_obj):
+    def remove_selected_reaction(self,caller_obj):
         selected_row_number=self.reactions_list_single_selection.props.selected
         if type(selected_row_number)==int:
-            #remove reaction from reactions list
+            #remove reaction from reactions database
+            try:
+                delete_reaction_command=f"delete from reactions where name='{self.reactions_list_single_selection.get_model()[selected_row_number].name}'"
+                print(delete_reaction_command)
+                self.props.application.db_cursor.execute(delete_reaction_command)
+                self.props.application.database_object.commit()
+            except mysql.connector.Error as err:
+                print("error while deleting record from database:",err)
             self.reactions_list_single_selection.get_model().remove(selected_row_number)
         else:
             print(f"No row selected(selected row:{selected_row_number})")
@@ -678,10 +708,10 @@ class reactions_display_page(Gtk.ApplicationWindow):
             reaction.name,
             reaction.reactants,
             reaction.products,
-            reaction.extra_info,
-            row_position
+            reaction.extra_info
         ]
         reaction_edit_page=add_reaction_to_db_page
+        #set reaction information list
         reaction_edit_page.reaction_information=reaction_details
         self.props.application.open_page(None,reaction_edit_page)
     def refresh_reactions_list(self,caller_obj):
@@ -693,12 +723,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         # #add data to list
         # self.add_reactions_data_to_list()
 
-        # columns=self.reactions_column_manager.get_columns()
-        # for column_number in range(columns.get_n_items()):
-        #     columns[column_number].get_factory().emit("unbind")
-        # for column_number in range(columns.get_n_items()):
-        #     columns[column_number].get_factory().emit("bind")
-        # print("[reactions display page]refreshed columns")
+        #print("[reactions display page]refreshed columns")
     def add_label_to_column(self,caller_factory,column_cell):
         column_cell.set_child(Gtk.Label.new())
     def set_column_cell_label(self,caller_factory,column_cell,column_number):
@@ -733,22 +758,23 @@ class reactions_display_page(Gtk.ApplicationWindow):
         self.props.application.db_cursor.execute(get_data_from_reactions_table_command)
         reactions_list=self.props.application.db_cursor.fetchall()
         #reaction list to gobject, append to list
+        print(reactions_list)
         for reaction in reactions_list:
-            reaction_gobject=reaction_info(reaction[1],reaction[2],reaction[3],reaction[4])
+            reaction_gobject=reaction_info(reaction[0],reaction[1],reaction[2],reaction[3])
             self.reactions_list.append(reaction_gobject)
-            # for i in range(self.reactions_list.get_n_items()):
-            #     print(self.reactions_list.get_item(i).name)
+
 
 #add reactions to table page
 class add_reaction_to_db_page(Gtk.ApplicationWindow):
     mode="add"
-    reaction_information=["","","","",0]
+    reaction_information=["","","",""]
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Add reaction to database")
         header_bar.set_titlebar(header_bar,self)
-
+        self.mode="add"
         #set window mode
-        for detail in self.reaction_information[:-1]:
+        print(self.reaction_information)
+        for detail in self.reaction_information:
             if detail != "":
                 self.mode="edit"
         print(self.mode)
@@ -762,13 +788,13 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
         products_label=Gtk.Label.new("products:")
         extra_info_label=Gtk.Label.new("extra information:")
         #label behaviour
-        reactants_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[0],-1)
-        name_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[1],-1)
+        name_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[0],-1)
+        reactants_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[1],-1)
         products_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[2],-1)
         extra_info_entry_buffer=Gtk.EntryBuffer.new(self.reaction_information[3],-1)
         
-        reactant_entry=Gtk.Entry.new_with_buffer(reactants_entry_buffer)
         name_entry=Gtk.Entry.new_with_buffer(name_entry_buffer)
+        reactant_entry=Gtk.Entry.new_with_buffer(reactants_entry_buffer)
         product_entry=Gtk.Entry.new_with_buffer(products_entry_buffer)
         extra_info_entry=Gtk.Entry.new_with_buffer(extra_info_entry_buffer)
 
@@ -792,15 +818,15 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
         main_box.append(add_button)
         
         #reaction_details_buffers=(reactants_entry_buffer,name_entry_buffer,products_entry_buffer,extra_info_entry_buffer)
-        add_button.connect('clicked',self.add_reaction_to_db,(reactants_entry_buffer,name_entry_buffer,products_entry_buffer,extra_info_entry_buffer))
+        add_button.connect('clicked',self.add_reaction_to_db,(name_entry_buffer,reactants_entry_buffer,products_entry_buffer,extra_info_entry_buffer))
     def add_reaction_to_db(self,caller_obj,reaction_details_buffers):
         #columns
         columns=self.props.application.reactions_table_columns
         #construct command for database
         if self.mode=="add":
             columns_str=""
-            for i in columns:
-                columns_str = columns_str + i + ","
+            for column in columns:
+                columns_str = columns_str + column + ","
             columns_str=columns_str[:-1]
             #values
             values_str=""
@@ -811,19 +837,31 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
             #command insert details in table
             reactions_table_command_string=f"insert into reactions ({columns_str}) values({values_str});"
         if self.mode=="edit":
+            #edited info
             name=reaction_details_buffers[0].get_text()
             reactants=reaction_details_buffers[1].get_text()
             products=reaction_details_buffers[2].get_text()
             extra_info=reaction_details_buffers[3].get_text()
             edited_reaction_information=[name,reactants,products,extra_info]
-
+            #db query string construct
             reactions_table_command_string="update reactions set"
+            reaction_not_edited=True
             for i in range(len(edited_reaction_information)):
                 if self.reaction_information[i] != edited_reaction_information[i]:
-                    reactions_table_command_string=reactions_table_command_string+f" {columns[i]}='{edited_reaction_information[i]}'"
-            reactions_table_command_string=reactions_table_command_string+f" where reaction_entry_number={self.reaction_information[-1]+1};"
+                    reaction_not_edited=False
+                    #add to the edit command
+                reactions_table_command_string=reactions_table_command_string+f" {columns[i]}='{edited_reaction_information[i]}',"
+            #exit if reaction is unedited
+            if reaction_not_edited==True:
+                #open previous window
+                previous_window=self.props.application.window_history[-2]
+                self.props.application.open_page(None,previous_window)
+                return
+            #identify the reaction with name
+            reactions_table_command_string=reactions_table_command_string[:-1]+f" where name='{self.reaction_information[0]}';"
         #send command to database
         try:
+            print(reactions_table_command_string)
             self.props.application.db_cursor.execute(reactions_table_command_string)
             self.props.application.database_object.commit()
         except mysql.connector.Error as err:
