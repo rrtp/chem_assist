@@ -405,6 +405,75 @@ def create_tables(connection):
         );''')
     connection.commit()
 
+def add_question_window(connection):
+    # Create a new window for adding questions
+    add_window = tk.Toplevel(root)
+    add_window.title("Add Question")
+    add_window.geometry("400x400")
+    
+    # Labels and entries for the question and options
+    tk.Label(add_window, text="Question:").pack()
+    question_entry = tk.Entry(add_window, width=50)
+    question_entry.pack()
+
+    tk.Label(add_window, text="Option A:").pack()
+    option_a_entry = tk.Entry(add_window, width=50)
+    option_a_entry.pack()
+
+    tk.Label(add_window, text="Option B:").pack()
+    option_b_entry = tk.Entry(add_window, width=50)
+    option_b_entry.pack()
+
+    tk.Label(add_window, text="Option C:").pack()
+    option_c_entry = tk.Entry(add_window, width=50)
+    option_c_entry.pack()
+
+    tk.Label(add_window, text="Option D:").pack()
+    option_d_entry = tk.Entry(add_window, width=50)
+    option_d_entry.pack()
+
+    tk.Label(add_window, text="Correct Answer (A, B, C, or D):").pack()
+    correct_answer_entry = tk.Entry(add_window, width=10)
+    correct_answer_entry.pack()
+
+    def add_question_to_db():
+        # Fetch input values
+        question = question_entry.get().strip()
+        option_a = option_a_entry.get().strip()
+        option_b = option_b_entry.get().strip()
+        option_c = option_c_entry.get().strip()
+        option_d = option_d_entry.get().strip()
+        correct_answer = correct_answer_entry.get().strip().upper()
+
+        # Validation
+        if not (question and option_a and option_b and option_c and option_d and correct_answer):
+            messagebox.showerror("Error", "All fields are required.")
+            return
+        
+        if correct_answer not in ("A", "B", "C", "D"):
+            messagebox.showerror("Error", "Correct answer must be one of A, B, C, or D.")
+            return
+        
+        # Add the question to the database
+        with connection.cursor() as cursor:
+            cursor.execute('''
+                INSERT INTO user_questions (question, option_a, option_b, option_c, option_d, correct_answer)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (question, option_a, option_b, option_c, option_d, correct_answer))
+        connection.commit()
+
+        messagebox.showinfo("Success", "Question added successfully!")
+        add_window.destroy()  # Close the window
+
+    # Add Question button
+    add_button = tk.Button(add_window, text="Add Question", command=add_question_to_db, bg="#4caf50", fg="white", font=("Arial", 12))
+    add_button.pack(pady=10)
+
+    # Cancel button
+    cancel_button = tk.Button(add_window, text="Cancel", command=add_window.destroy, bg="#f44336", fg="white", font=("Arial", 12))
+    cancel_button.pack(pady=10)
+
+
 def remove_question_window(connection):
     # Create a new window for removing questions
     remove_window = tk.Toplevel(root)
