@@ -64,7 +64,7 @@ class welcome_page(Gtk.ApplicationWindow):
         self.set_child(welcome_message)
         welcome_message.set_markup(\
             f"""<span font-size='{self.props.application.monitor_width/50}pt'>Welcome to Chemistry assistant!</span>
-            <span>{"\n"*int(self.props.application.monitor_height/50)}</span>
+            <span>{"\n"*int(self.props.application.monitor_height/100)}</span>
             <span font-size="{self.props.application.monitor_width/120}pt">Press any key to start!</span>""")
         #event controller function
         event_controller.connect('key-pressed',self.do_key_pressed)
