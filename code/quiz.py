@@ -84,9 +84,10 @@ def show_results(user_name, score, total_questions, connection):
     home_button = tk.Button(root, text="Home", command=reset_app, bg="#0288d1", fg="white", font=("Arial", 12))
     home_button.pack(pady=10)
 
-    exit_button = tk.Button(root, text="Exit", command=root.quit, bg="#f44336", fg="white", font=("Arial", 12))
+    exit_button = tk.Button(root, text="Exit", command=exit, bg="#f44336", fg="white", font=("Arial", 12))
     exit_button.pack(pady=10)
-
+def exit(*args):
+    root.destroy()
 def show_report(connection):
     # Create a new window for the report
     report_window = tk.Toplevel(root)
@@ -347,7 +348,7 @@ def show_results(user_name, score, total_questions, connection, is_user_quiz=Fal
     home_button = tk.Button(root, text="Home", command=reset_app, bg="#0288d1", fg="white", font=("Arial", 12))
     home_button.pack(pady=10)
 
-    exit_button = tk.Button(root, text="Exit", command=root.quit, bg="#f44336", fg="white", font=("Arial", 12))
+    exit_button = tk.Button(root, text="Exit", command=exit, bg="#f44336", fg="white", font=("Arial", 12))
     exit_button.pack(pady=10)
 
 def show_user_quiz_scores(connection):
