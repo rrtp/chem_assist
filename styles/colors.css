@@ -1,18 +1,15 @@
 window{
-    background-color: rgba(74, 29, 15, 0.98);
+    background-color: rgba(5, 62, 3, 0.657);
 }
-#main_menu_page{
-    background-color: rgb(12, 11, 118);
+window.main_menu{
+    background-color: rgba(0, 4, 255, 0.591);
 }
 headerbar{
     background:rgba(157, 92, 35, 0);
     color:aliceblue;
 }
 button{
-    background: rgba(30, 115, 9, 0.92);
-}
-button.iconbutton{
-    background: rgba(255, 255, 255, 0);
+    background: rgba(178, 189, 10, 0.92);
 }
 button.main_menu_buttons_box{
     background: #2a6651c5;
@@ -30,7 +27,17 @@ button.start_quiz_button{
     border-radius: 200px;
 }
 button.start_quiz_button:hover{
-    background: yellow;
+    background: green;
+}
+button.reactions_button_main_menu{
+    background: rgb(136, 0, 255);
+}
+button.iconbutton{
+    background: rgba(255, 255, 0, 0);
+}
+button.iconbutton:hover{
+    background:rgba(0, 255, 217, 0.244);
+    border-radius:100px;
 }
 label{
     color:rgb(244, 209, 209);
