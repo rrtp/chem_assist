@@ -38,20 +38,19 @@ class header_bar(Gtk.HeaderBar):
             self.settings_button=Gtk.Button.new()
             settings_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["settings"])
             self.settings_button.set_child(settings_button_image)
+            self.settings_button.add_css_class("iconbutton")
             #add to headerbar
             page.props.titlebar.pack_end(page.props.titlebar.settings_button)
             page.props.titlebar.settings_button.connect('clicked',page.props.application.open_page,settings_page)
-            self.settings_button.add_css_class("iconbutton")
         if back_button==True:
             #back button
             self.back_button=Gtk.Button.new()
             back_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["back"])
             self.back_button.set_child(back_button_image)
+            self.back_button.add_css_class("iconbutton")
             #add to headerbar
             page.props.titlebar.back_button.connect('clicked',page.props.application.open_page,page.props.application.window_history[-2])
             page.props.titlebar.pack_start(page.props.titlebar.back_button)
-            self.back_button.add_css_class("iconbutton")
-
 ##pages
 #welcome page
 class welcome_page(Gtk.ApplicationWindow):
@@ -74,6 +73,7 @@ class welcome_page(Gtk.ApplicationWindow):
 
 #settings page
 class settings_page(Gtk.ApplicationWindow):
+    message_box=True
     open_page=""
 
     def __init__(self,*args,**kwargs):
@@ -185,14 +185,14 @@ class settings_page(Gtk.ApplicationWindow):
             connection_status_message="Connection to database available"
         else:
             connection_status_message="Connection to database Unavailable!"
-        db_connection_status_label=Gtk.Label.new(connection_status_message)
+        self.message_label=Gtk.Label.new(connection_status_message)
         connect_to_db_button=Gtk.Button.new_with_label("retry connecting to database")
         connect_to_db_button.set_action_name('win.retry_connection_to_db')
 
         #add to settings window
         self.settings_box.append(db_dir_box)
         self.settings_box.append(connect_to_db_button)
-        self.settings_box.append(db_connection_status_label)
+        self.settings_box.append(self.message_label)
     #users settings
     def users_display(self,caller_obj):
         self.reload()
@@ -263,20 +263,9 @@ class settings_page(Gtk.ApplicationWindow):
         db_entry.set_max_length(0)
     #attempt to connect to database
     def retry_connection_to_db(self,caller_action,param):
-        db_connection_return_value=self.props.application.connect_to_db(None,None)
-        self.update_db_connection_message(None,db_connection_return_value)
-    #update the database settings page message
-    def update_db_connection_message(self,caller_obj,return_message=""):
         db_connection_status=self.props.application.connect_to_db_server_and_create_db()
         if db_connection_status == True:
-            db_connection_status="cursor available"
-        else:
-            db_connection_status=str(db_connection_status)
-        message=Gtk.Label.new(db_connection_status)
-        #add to settings page
-        self.settings_box.remove(self.settings_box.get_last_child())
-        self.settings_box.append(message)
-
+            self.message_label.set_text("cursor available!")            
     #on user button action state change
     def on_user_button_action_state_change(*args):
         print("state changed",args)
@@ -351,15 +340,14 @@ class main_menu_page(Gtk.ApplicationWindow):
     message_box=True
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Chemistry assistant main page")
-        self.props.name="main_menu_page"
-        self.add_css_class("main_manu_page")
+        self.add_css_class("main_menu")
 
         main_menu_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
         self.set_child(main_menu_page_box)
 
         #boxes
         #message box
-        message_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
+        message_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,0)
         message_box_scroller=Gtk.ScrolledWindow()
         message_box_scroller.set_valign(Gtk.Align.CENTER)
         message_box_scroller.set_child(message_box)
@@ -367,6 +355,7 @@ class main_menu_page(Gtk.ApplicationWindow):
         main_menu_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         main_menu_buttons_box.set_valign(Gtk.Align.CENTER)
         main_menu_buttons_box.set_halign(Gtk.Align.CENTER)
+
         #scroll
         #scroll for main menu buttons box
         main_menu_buttons_box_scroller=Gtk.ScrolledWindow()
@@ -386,16 +375,21 @@ class main_menu_page(Gtk.ApplicationWindow):
         quiz_button=Gtk.Button.new_with_label("Quiz")
         quit_button=Gtk.Button.new_with_label("Quit")
         simulator_button=Gtk.Button.new_with_label("Simulate")
-        settings_button=Gtk.Button.new_with_label("Settings")
+        settings_button=Gtk.Button.new()
 
         #add buttons to box
         main_menu_buttons_box.append(reactions_button)
         main_menu_buttons_box.append(quiz_button)
-        #main_menu_buttons_box.append(simulator_button)
-        main_menu_buttons_box.append(settings_button)
+        main_menu_buttons_box.append(simulator_button)
         main_menu_buttons_box.append(quit_button)
-
+        message_box.append(settings_button)
+        #images
+        settings_button_image=Gtk.Image.new_from_file(self.props.application.pics_dir+"png/settings.png")
+        settings_button.set_child(settings_button_image)
         #css
+        simulator_button.add_css_class('reactions_button_main_menu')
+        reactions_button.add_css_class('reactions_button_main_menu')
+        settings_button.add_css_class('iconbutton')
         main_menu_buttons_box.add_css_class("main_menu_buttons_box")
         add_css_class_to_children(main_menu_buttons_box,"main_menu_buttons_box")
 
@@ -443,7 +437,7 @@ class login_page(Gtk.ApplicationWindow):
         user_name_entry.set_placeholder_text("user name")
         password_entry.set_visibility(False)
         password_entry.set_placeholder_text("password")
-        password_entry.set_invisible_char("&")
+        password_entry.set_invisible_char("#")
 
         entries_box.append(user_name_entry)
         entries_box.append(password_entry)
@@ -503,9 +497,10 @@ class quiz_main_page(Gtk.ApplicationWindow):
         #message box message
         self.message_label=Gtk.Label.new()
         self.message_box.append(self.message_label)
-        #message box scroll
+        #scroll
         message_box_scroll=Gtk.ScrolledWindow.new()
         message_box_scroll.set_child(self.message_box)
+
         #buttons
         start_quiz_button=Gtk.Button.new_with_label("Start quiz")
         #button properties
@@ -654,7 +649,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_list_box.append(self.reactions_column_manager)
 
         ##bottom panel
-        self.refresh_button=Gtk.Button.new_with_label("Refresh")
+        refresh_button=Gtk.Button.new_with_label("Refresh")
         reactions_db_import_button=Gtk.Button.new_with_label("Import")
         reactions_db_export_button=Gtk.Button.new_with_label("Export")
         reactions_db_add_button=Gtk.Button.new_with_label("Add")
@@ -662,25 +657,25 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reaction_remove_button=Gtk.Button.new_with_label("delete")
 
         #add button to bottom panel
-        reactions_page_bottom_panel_box.append(self.refresh_button)
+        reactions_page_bottom_panel_box.append(refresh_button)
         reactions_page_bottom_panel_box.append(reaction_edit_button)
         reactions_page_bottom_panel_box.append(reaction_remove_button)
         reactions_page_bottom_panel_box.append(reactions_db_add_button)
         #reactions_page_bottom_panel_box.append(reactions_db_import_button)
         #reactions_page_bottom_panel_box.append(reactions_db_export_button)
         
-        
+        #styling
+        refresh_button_image=Gtk.Image.new_from_file(self.props.application.pics_dir+"png/refresh_button.png")
+        refresh_button.set_child(refresh_button_image)
+        refresh_button.add_css_class('iconbutton')
+
         #button functions
-        self.refresh_button.connect('clicked',self.refresh_reactions_list)
+        refresh_button.connect('clicked',self.refresh_reactions_list)
         reaction_edit_button.connect('clicked',self.edit_selected_reaction)
         reaction_remove_button.connect('clicked',self.remove_selected_reaction)
         reactions_db_add_button.connect('clicked',self.add_reaction_to_db)
         #edit row function
         self.reactions_column_manager.connect('activate',self.edit_row)
-
-        # #add image to refresh button
-        # refresh_button_image=Gtk.Image.new_from_file(self.props.application.image_paths["refresh"])
-        # self.refresh_button.set_child(refresh_button_image)
     def edit_selected_reaction(self,caller_obj):
         #open edit row page if a row is selected
         selected_row_number=self.reactions_list_single_selection.props.selected
@@ -721,13 +716,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
     def refresh_reactions_list(self,caller_obj):
         print("refreshing page")
         self.props.application.open_page(None,reactions_display_page)
-        # reactions_list=self.reactions_list_single_selection.get_model()
-        # #clear list
-        # reactions_list.remove_all()
-        # #add data to list
-        # self.add_reactions_data_to_list()
 
-        #print("[reactions display page]refreshed columns")
     def add_label_to_column(self,caller_factory,column_cell):
         column_cell.set_child(Gtk.Label.new())
     def set_column_cell_label(self,caller_factory,column_cell,column_number):
