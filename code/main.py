@@ -5,12 +5,6 @@ from mysql.connector import errorcode
 import pages
 import quiz
 
-#folder for Css, user interface layout definition,database,pictures
-css_dir="styles/"
-ui_dir="ui_definitions/"
-db_dir="databases/"
-pics_dir="pictures/"
-
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
     #window history
@@ -19,6 +13,12 @@ class Application(Gtk.Application):
 
     #default display
     default_display=Gdk.Display.get_default()
+
+    #folder for Css, user interface layout definition,database,pictures
+    css_dir="styles/"
+    ui_dir="ui_definitions/"
+    db_dir="databases/"
+    pics_dir="pictures/"
 
     #css file
     css_files_path={
@@ -38,7 +38,7 @@ class Application(Gtk.Application):
     #users
     users={'':'',"chem_assist_user":"chem_assist_user_password"}
 
-    #images paths
+    #images
     image_paths={
         "settings":pics_dir+"settings.svg",
         "back":pics_dir+"back.svg",
@@ -112,8 +112,12 @@ class Application(Gtk.Application):
             if self.window_history[-1].message_box==True:
                 self.props.active_window.message_label.set_text("creating database error:"+str(create_db_return))
             return create_db_return
+        #hide current window when quiz is open
+        self.close_page(self.props.active_window)
         #open quiz.py quiz page
         quiz.main(self.database_object)
+        #reshow current window
+        self.open_page(None,pages.quiz_main_page)
 
     #close current page
     def close_page(self,caller_obj=None,page=None):
