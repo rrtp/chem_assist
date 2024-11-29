@@ -36,18 +36,16 @@ class header_bar(Gtk.HeaderBar):
         if settings==True:
             #settings button
             self.settings_button=Gtk.Button.new()
-            settings_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["settings"])
-            self.settings_button.set_child(settings_button_image)
-            self.settings_button.add_css_class("iconbutton")
+            self.settings_button.add_css_class("settings_button")
+            self.settings_button.add_css_class("icon_button")
             #add to headerbar
             page.props.titlebar.pack_end(page.props.titlebar.settings_button)
             page.props.titlebar.settings_button.connect('clicked',page.props.application.open_page,settings_page)
         if back_button==True:
             #back button
             self.back_button=Gtk.Button.new()
-            back_button_image=Gtk.Image.new_from_file(page.props.application.image_paths["back"])
-            self.back_button.set_child(back_button_image)
-            self.back_button.add_css_class("iconbutton")
+            self.back_button.add_css_class("back_button")
+            self.back_button.add_css_class("icon_button")
             #add to headerbar
             page.props.titlebar.back_button.connect('clicked',page.props.application.open_page,page.props.application.window_history[-2])
             page.props.titlebar.pack_start(page.props.titlebar.back_button)
@@ -388,13 +386,11 @@ class main_menu_page(Gtk.ApplicationWindow):
         main_menu_buttons_box.append(simulator_button)
         main_menu_buttons_box.append(quit_button)
         message_box.append(settings_button)
-        #images
-        settings_button_image=Gtk.Image.new_from_file(self.props.application.pics_dir+"png/settings.png")
-        settings_button.set_child(settings_button_image)
         #css
         simulator_button.add_css_class('reactions_button_main_menu')
         reactions_button.add_css_class('reactions_button_main_menu')
-        settings_button.add_css_class('iconbutton')
+        settings_button.add_css_class('icon_button')
+        settings_button.add_css_class('settings_button')
         main_menu_buttons_box.add_css_class("main_menu_buttons_box")
         add_css_class_to_children(main_menu_buttons_box,"main_menu_buttons_box")
 
@@ -528,8 +524,9 @@ class reactions_display_page(Gtk.ApplicationWindow):
     pull_data_from_reactions_table=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
-
+        #create a message label with existing text
         self.message_label=Gtk.Label.new(self.message_label.get_label())
+
         ##db
         #connect to database server, create database and set it as current database
         connect_to_db_server_and_create_db_return=self.props.application.connect_to_db_server_and_create_db()
@@ -572,14 +569,10 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_list_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
         reactions_page_bottom_panel_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
-        message_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
-
-        #message label
-        message_box.append(self.message_label)
 
         #add scroll support
         reactions_page_box_scroller.set_child(reactions_page_box)
-        message_box_scroll.set_child(message_box)
+        message_box_scroll.set_child(self.message_label)
 
         #add to page
         reactions_page_box.append(reactions_list_box)
@@ -623,6 +616,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         extra_info_column.props.resizable=True
 
         #column properties
+        #for column headers to take up the horizontal space
         name_column.set_expand(True)
         reactants_column.set_expand(True)
         products_column.set_expand(True)
@@ -654,9 +648,9 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_list_box.append(self.reactions_column_manager)
 
         ##bottom panel
-        refresh_button=Gtk.Button.new_with_label("Refresh")
-        reactions_db_import_button=Gtk.Button.new_with_label("Import")
-        reactions_db_export_button=Gtk.Button.new_with_label("Export")
+        refresh_button=Gtk.Button.new()
+        # reactions_db_import_button=Gtk.Button.new_with_label("Import")
+        # reactions_db_export_button=Gtk.Button.new_with_label("Export")
         reactions_db_add_button=Gtk.Button.new_with_label("Add")
         reaction_edit_button=Gtk.Button.new_with_label("edit")
         reaction_remove_button=Gtk.Button.new_with_label("delete")
@@ -668,11 +662,10 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reactions_page_bottom_panel_box.append(reactions_db_add_button)
         #reactions_page_bottom_panel_box.append(reactions_db_import_button)
         #reactions_page_bottom_panel_box.append(reactions_db_export_button)
-        
+
         #styling
-        refresh_button_image=Gtk.Image.new_from_file(self.props.application.pics_dir+"png/refresh_button.png")
-        refresh_button.set_child(refresh_button_image)
-        refresh_button.add_css_class('iconbutton')
+        refresh_button.add_css_class('refresh_button')
+        refresh_button.add_css_class('icon_button')
 
         #button functions
         refresh_button.connect('clicked',self.refresh_reactions_list)
