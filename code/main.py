@@ -233,7 +233,8 @@ class Application(Gtk.Application):
         connection_profile={
             "user":self.current_user_action.props.state.get_string(),
             "password":self.users[self.current_user_action.props.state.get_string()],
-            "host":"localhost"
+            "host":"localhost",
+            "collation":"utf8_mb4_general_ci"
         }
         try:
             self.database_object=mysql.connector.connect( **connection_profile)
