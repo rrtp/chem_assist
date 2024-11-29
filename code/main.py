@@ -140,9 +140,8 @@ class Application(Gtk.Application):
             del app.window_history[0]
 
         page=page(application=app)
-        page.set_default_size(app.monitor_width/2,app.monitor_height/2)
+        page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
         page.present()
-        page.get_surface.props.scale=2
         print(page.get_surface().get_scale())
     
     ##appearance
