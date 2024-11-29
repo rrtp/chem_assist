@@ -180,19 +180,24 @@ class settings_page(Gtk.ApplicationWindow):
         db_dir_box.append(database_directory_textbox)
         db_dir_box.append(db_dir_edit_button)
 
-        #db connection status
+        #message text
         if self.props.application.db_cursor!=None:
             connection_status_message="Connection to database available"
         else:
             connection_status_message="Connection to database Unavailable!"
         self.message_label=Gtk.Label.new(connection_status_message)
+        #scrolling support for message text
+        message_label_scroll=Gtk.ScrolledWindow.new()
+        message_label_scroll.set_child(self.message_label)
+
+        #reconnect to database button
         connect_to_db_button=Gtk.Button.new_with_label("retry connecting to database")
         connect_to_db_button.set_action_name('win.retry_connection_to_db')
 
         #add to settings window
         self.settings_box.append(db_dir_box)
         self.settings_box.append(connect_to_db_button)
-        self.settings_box.append(self.message_label)
+        self.settings_box.append(message_label_scroll)
     #users settings
     def users_display(self,caller_obj):
         self.reload()
