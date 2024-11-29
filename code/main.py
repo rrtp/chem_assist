@@ -7,13 +7,10 @@ import quiz
 
 #remove the last element of a path string
 def get_dir_name(path):
-    #split the path into directories
-    path_list=path.split("/")
-    #remove last element
-    path_list.pop()
-    #make the directories list into string
-    dir_path="/".join(path_list)+"/"
-    return dir_path
+    #split the path into last parent directory path and file
+    path_list=os.path.split(path)
+    #return the parent directory path
+    return path_list[0]+"/"
 
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
