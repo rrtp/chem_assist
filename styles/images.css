@@ -1,0 +1,17 @@
+button.icon_button{
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+button.icon_button:hover{
+    background-color:aqua;
+}
+button.settings_button{
+    background-image:url("../pictures/settings.svg");
+}
+button.back_button{
+    background-image: url("../pictures/back.svg");
+}
+button.refresh_button{
+    background-image: url("../pictures/refresh_button.svg");
+}
