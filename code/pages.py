@@ -523,7 +523,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
     pull_data_from_reactions_table=False
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="Reactions")
-    
+
         self.message_label=Gtk.Label.new(self.message_label.get_label())
         ##db
         #connect to database server, create database and set it as current database

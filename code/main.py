@@ -142,6 +142,8 @@ class Application(Gtk.Application):
         page=page(application=app)
         page.set_default_size(app.monitor_width/2,app.monitor_height/2)
         page.present()
+        page.get_surface.props.scale=2
+        print(page.get_surface().get_scale())
     
     ##appearance
     #get monitor dimentions
