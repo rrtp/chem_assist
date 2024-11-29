@@ -5,6 +5,16 @@ from mysql.connector import errorcode
 import pages
 import quiz
 
+#remove the last element of a path string
+def get_dir_name(path):
+    #split the path into directories
+    path_list=path.split("/")
+    #remove last element
+    path_list.pop()
+    #make the directories list into string
+    dir_path="/".join(path_list)+"/"
+    return dir_path
+
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
     #window history
@@ -14,11 +24,21 @@ class Application(Gtk.Application):
     #default display
     default_display=Gdk.Display.get_default()
 
+    current_file_path=__file__
+    current_file_dir=get_dir_name(current_file_path)
     #folder for Css, user interface layout definition,database,pictures
-    css_dir="styles/"
-    ui_dir="ui_definitions/"
-    db_dir="databases/"
-    pics_dir="pictures/"
+    css_dir=current_file_dir+"../styles/"
+    ui_dir=current_file_dir+"../ui_definitions/"
+    db_dir=current_file_dir+"../databases/"
+    pics_dir=current_file_dir+"../pictures/"
+
+    #images
+    image_paths={
+        "settings":pics_dir+"settings.svg",
+        "back":pics_dir+"back.svg",
+        "app":pics_dir+"app_image.svg",
+        "refresh":pics_dir+"refresh_button.svg"
+    }
 
     #css file
     css_files_path={
@@ -29,7 +49,7 @@ class Application(Gtk.Application):
     colors_css_provider=Gtk.CssProvider.new()
     current_styles={"other_styles":False,"colors":False}
 
-    #database file path
+    #database
     db_name="chem_assist_db1"
     db_cursor=None
     database_object=None
@@ -38,16 +58,10 @@ class Application(Gtk.Application):
     #users
     users={'':'',"chem_assist_user":"chem_assist_user_password"}
 
-    #images
-    image_paths={
-        "settings":pics_dir+"settings.svg",
-        "back":pics_dir+"back.svg",
-        "app":pics_dir+"app_image.svg",
-        "refresh":pics_dir+"refresh_button.svg"
-    }
-
+    #columns for reactions table in database
     reactions_table_columns=("name","reactants","products","extra_info")
-    #constructor
+
+    #this function's code executed automatically
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
         self.connect('activate',self.on_activate)
@@ -55,6 +69,7 @@ class Application(Gtk.Application):
     #on activate app
     def on_activate(self,app):
         print("activated")
+        print(self.pics_dir,self.css_dir)
         #get monitor dimentions
         self.primary_monitor=self.default_display.get_monitors()[0]
         self.get_monitor_dimentions(self.primary_monitor)
@@ -141,9 +156,7 @@ class Application(Gtk.Application):
 
         page=page(application=app)
         page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
-        page.present()
-        print(page.get_surface().get_scale())
-    
+        page.present()    
     ##appearance
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
@@ -263,6 +276,7 @@ class Application(Gtk.Application):
                 return err
         print("=>created table 'reactions'")
         return True
-#Create an instance of Application
+
+#Create an instance of Application class
 app=Application()
 app.run(None)
