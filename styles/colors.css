@@ -1,5 +1,8 @@
-window{
+/* window{
     background-color: rgba(5, 62, 3, 0.657);
+} */
+window{
+    background-image:linear-gradient(purple,rgb(47, 0, 255));
 }
 window.main_menu{
     background-color: rgba(0, 4, 255, 0.591);
