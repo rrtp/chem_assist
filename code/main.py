@@ -61,7 +61,7 @@ class Application(Gtk.Application):
     current_file_path=__file__
     current_file_dir_parent=os.path.split(os.path.split(current_file_path)[0])[0] #get the parent directory of this file's directory
     if getattr(sys,'frozen',False):
-        current_file_dir=sys._MEIPASS
+        current_file_dir_parent=sys._MEIPASS
     #folder for styles,pictures
     css_dir=os.path.join(current_file_dir_parent,'styles')
     pics_dir=os.path.join(current_file_dir_parent,"pictures")
@@ -91,7 +91,7 @@ class Application(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.chem_assist_project.chem_assist")
         self.connect('activate',self.on_activate)
-
+        print(self.current_file_dir_parent)
     #on activate app
     def on_activate(self,app):
         print("activated")
