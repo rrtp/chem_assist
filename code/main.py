@@ -1,16 +1,52 @@
-import gi,os,mysql.connector
+import gi,os,sys,mysql.connector
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk,Gdk,Gio,GLib
 from mysql.connector import errorcode
 import pages
 import quiz
 
-#remove the last element of a path string
-def get_dir_name(path):
-    #split the path into last parent directory path and file
-    path_list=os.path.split(path)
-    #return the parent directory path
-    return path_list[0]+"/"
+#construct dictionary from css file
+def read_css_file(css_file_path):
+    css_file=open(css_file_path,"r")
+    css_file_contents=css_file.read()
+    print(css_file_contents)
+    mode="element"
+    css_dict={}
+
+    element=""
+    key=""
+    value=""
+    for a in css_file_contents:
+        #ignore lines starting with @
+        if a=="@":
+            mode="ignore"
+        if mode=="ignore" and a==";":
+            mode="element"
+            continue
+        #ignore whitespace character
+        if a in [" ","\t","\n"] or mode=="ignore":
+            continue
+        #make the dictionary
+        if a not in ["{","}",";",":"]:
+            if mode=="element":
+                element=element+a
+            elif mode=="key":
+                key=key+a
+            elif mode=="value":
+                value=value+a
+        if a=="{":
+            css_dict[element]={}
+            mode="key"
+        if a==":":
+            mode="value"
+        if a==";":
+            css_dict[element][key]=value
+            key,value="",""
+            mode="key"
+        if a=="}":
+            element=""
+            mode="element"
+    return css_dict
 
 #custom gtk application class containing helpful definitions
 class Application(Gtk.Application):
@@ -21,26 +57,19 @@ class Application(Gtk.Application):
     #default display
     default_display=Gdk.Display.get_default()
 
-    current_file_path=__file__
-    current_file_dir=get_dir_name(current_file_path)
-    #folder for Css, user interface layout definition,database,pictures
-    css_dir=current_file_dir+"../styles/"
-    ui_dir=current_file_dir+"../ui_definitions/"
-    db_dir=current_file_dir+"../databases/"
-    pics_dir=current_file_dir+"../pictures/"
 
-    #images
-    image_paths={
-        "settings":pics_dir+"settings.svg",
-        "back":pics_dir+"back.svg",
-        "app":pics_dir+"app_image.svg",
-        "refresh":pics_dir+"refresh_button.svg"
-    }
+    current_file_path=__file__
+    current_file_dir_parent=os.path.split(os.path.split(current_file_path)[0])[0] #get the parent directory of this file's directory
+    if getattr(sys,'frozen',False):
+        current_file_dir=sys._MEIPASS
+    #folder for styles,pictures
+    css_dir=os.path.join(current_file_dir_parent,'styles')
+    pics_dir=os.path.join(current_file_dir_parent,"pictures")
 
     #css file
     css_files_path={
-        "styles":css_dir+"styles.css",
-        "colors":css_dir+"colors.css"
+        "styles":os.path.join(css_dir,"styles.css"),
+        "colors":os.path.join(css_dir,"colors.css")
     }
     other_styles_css_provider=Gtk.CssProvider.new()
     colors_css_provider=Gtk.CssProvider.new()
@@ -66,7 +95,7 @@ class Application(Gtk.Application):
     #on activate app
     def on_activate(self,app):
         print("activated")
-        print(self.pics_dir,self.css_dir)
+
         #get monitor dimentions
         self.primary_monitor=self.default_display.get_monitors()[0]
         self.get_monitor_dimentions(self.primary_monitor)
