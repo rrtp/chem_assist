@@ -352,7 +352,6 @@ class main_menu_page(Gtk.ApplicationWindow):
         #message box
         message_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,0)
         message_box_scroller=Gtk.ScrolledWindow()
-        message_box_scroller.set_valign(Gtk.Align.CENTER)
         message_box_scroller.set_child(message_box)
         #main menu buttons box
         main_menu_buttons_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,10)
@@ -386,6 +385,10 @@ class main_menu_page(Gtk.ApplicationWindow):
         main_menu_buttons_box.append(simulator_button)
         main_menu_buttons_box.append(quit_button)
         message_box.append(settings_button)
+
+        #set the default hightlighted widget
+        self.set_default_widget(self.get_first_child().get_first_child().get_next_sibling().get_first_child().get_first_child().get_first_child())
+
         #css
         simulator_button.add_css_class('reactions_button_main_menu')
         reactions_button.add_css_class('reactions_button_main_menu')
@@ -577,8 +580,7 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #add to page
         reactions_page_box.append(reactions_list_box)
         reactions_page_box.append(message_box_scroll)
-        if self.pull_data_from_reactions_table == True:
-            reactions_page_box.append(reactions_page_bottom_panel_box)
+        reactions_page_box.append(reactions_page_bottom_panel_box)
 
         #box properties
         reactions_page_box.set_halign(Gtk.Align.FILL)
@@ -604,12 +606,9 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #name column
         name_column_signal_factory=Gtk.SignalListItemFactory.new()
         name_column=Gtk.ColumnViewColumn.new("name",name_column_signal_factory)
-        #reactants column
-        reactants_column_signal_factory=Gtk.SignalListItemFactory.new()
-        reactants_column=Gtk.ColumnViewColumn.new("reactants",reactants_column_signal_factory)
-        #products column
-        products_column_signal_factory=Gtk.SignalListItemFactory.new()
-        products_column=Gtk.ColumnViewColumn.new("products",products_column_signal_factory)
+        #reaction column
+        reaction_column_signal_list_item_factory=Gtk.SignalListItemFactory.new()
+        reaction_column=Gtk.ColumnViewColumn.new("reaction",reaction_column_signal_list_item_factory)
         #extra info column
         extra_info_column_signal_factory=Gtk.SignalListItemFactory.new()
         extra_info_column=Gtk.ColumnViewColumn.new("extra_info",extra_info_column_signal_factory)
@@ -618,31 +617,26 @@ class reactions_display_page(Gtk.ApplicationWindow):
         #column properties
         #for column headers to take up the horizontal space
         name_column.set_expand(True)
-        reactants_column.set_expand(True)
-        products_column.set_expand(True)
+        reaction_column.set_expand(True)
         extra_info_column.set_expand(True)
 
         #display items
         name_column_signal_factory.connect("setup",self.add_label_to_column)
-        reactants_column_signal_factory.connect("setup",self.add_label_to_column)
-        products_column_signal_factory.connect("setup",self.add_label_to_column)
+        reaction_column_signal_list_item_factory.connect("setup",self.add_reaction)
         extra_info_column_signal_factory.connect("setup",self.add_label_to_column)
 
         name_column_signal_factory.connect("bind",self.set_column_cell_label,1)
-        reactants_column_signal_factory.connect("bind",self.set_column_cell_label,2)
-        products_column_signal_factory.connect("bind",self.set_column_cell_label,3)
-        extra_info_column_signal_factory.connect("bind",self.set_column_cell_label,4)
+        reaction_column_signal_list_item_factory.connect("bind",self.display_reaction)
+        extra_info_column_signal_factory.connect("bind",self.set_column_cell_label,3)
 
         name_column_signal_factory.connect("unbind",self.remove_element_from_column)
-        reactants_column_signal_factory.connect("unbind",self.remove_element_from_column)
-        products_column_signal_factory.connect("unbind",self.remove_element_from_column)
+        reaction_column_signal_list_item_factory.connect("unbind",self.remove_element_from_column)
         extra_info_column_signal_factory.connect("unbind",self.remove_element_from_column)
 
         #create column view
         self.reactions_column_manager=Gtk.ColumnView.new(self.reactions_list_single_selection)
         self.reactions_column_manager.append_column(name_column)
-        self.reactions_column_manager.append_column(reactants_column)
-        self.reactions_column_manager.append_column(products_column)
+        self.reactions_column_manager.append_column(reaction_column)
         self.reactions_column_manager.append_column(extra_info_column)
         #add to box
         reactions_list_box.append(self.reactions_column_manager)
@@ -657,15 +651,16 @@ class reactions_display_page(Gtk.ApplicationWindow):
 
         #add button to bottom panel
         reactions_page_bottom_panel_box.append(refresh_button)
-        reactions_page_bottom_panel_box.append(reaction_edit_button)
-        reactions_page_bottom_panel_box.append(reaction_remove_button)
-        reactions_page_bottom_panel_box.append(reactions_db_add_button)
-        #reactions_page_bottom_panel_box.append(reactions_db_import_button)
-        #reactions_page_bottom_panel_box.append(reactions_db_export_button)
+        if self.pull_data_from_reactions_table:
+            reactions_page_bottom_panel_box.append(reaction_edit_button)
+            reactions_page_bottom_panel_box.append(reaction_remove_button)
+            reactions_page_bottom_panel_box.append(reactions_db_add_button)
+            #reactions_page_bottom_panel_box.append(reactions_db_import_button)
+            #reactions_page_bottom_panel_box.append(reactions_db_export_button)
 
         #styling
-        refresh_button.add_css_class('refresh_button')
         refresh_button.add_css_class('icon_button')
+        refresh_button.add_css_class('refresh_button')
 
         #button functions
         refresh_button.connect('clicked',self.refresh_reactions_list)
@@ -715,11 +710,46 @@ class reactions_display_page(Gtk.ApplicationWindow):
         print("refreshing page")
         self.props.application.open_page(None,reactions_display_page)
 
+    #prepare the column
     def add_label_to_column(self,caller_factory,column_cell):
-        column_cell.set_child(Gtk.Label.new())
+        column_cell_scroll=Gtk.ScrolledWindow.new()
+        column_cell_scroll.set_child(Gtk.Label.new())
+        column_cell_scroll.set_propagate_natural_width(True)
+
+        column_cell.set_child(column_cell_scroll)
+    def add_reaction(self,caller_factory,column_cell):
+        reaction_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,2)
+
+        #reactants
+        reactants_scroll=Gtk.ScrolledWindow.new()
+        reactants_scroll.set_propagate_natural_width(True)
+        reactants_scroll.set_child(Gtk.Label.new())
+
+        #arrow
+        arrow=Gtk.Label.new()
+        arrow.set_text("----->")
+        
+        #products
+        products_scroll=Gtk.ScrolledWindow.new()
+        products_scroll.set_propagate_natural_width(True)
+        products_scroll.set_child(Gtk.Label.new())
+
+        #add to reaction box
+        reaction_box.append(reactants_scroll)
+        reaction_box.append(arrow)
+        reaction_box.append(products_scroll)
+
+        #add to column
+        column_cell.set_child(reaction_box)
+    #display on column
+    def display_reaction(self,caller_factory,column_cell):
+        #set the text for the column
+        reaction=self.reactions_list_single_selection.get_model()[column_cell.get_position()]
+        #get products label from the column cell and set text
+        column_cell.get_child().get_first_child().get_child().get_child().set_text(reaction.reactants)
+        #get the reactants label from the column cell and set text
+        column_cell.get_child().get_first_child().get_next_sibling().get_next_sibling().get_child().get_child().set_text(reaction.products)
     def set_column_cell_label(self,caller_factory,column_cell,column_number):
-        #cell label
-        label=column_cell.get_child()
         #cell position
         cell_position=column_cell.get_position()
         #reactions list
@@ -728,15 +758,14 @@ class reactions_display_page(Gtk.ApplicationWindow):
         reaction_details=reactions_list[cell_position]
         column_num_to_column_val_dict={
             1:reaction_details.name,
-            2:reaction_details.reactants,
-            3:reaction_details.products,
-            4:reaction_details.extra_info
+            3:reaction_details.extra_info
         }
         label_text=column_num_to_column_val_dict[column_number]
         #set entry value
-        column_cell.get_child().set_text(label_text)
+        column_cell.get_child().props.child.get_child().set_text(label_text)
+    #remove data from column
     def remove_element_from_column(self,caller_factory,column_cell):
-        column_cell.get_child().set_text("")
+        column_cell.get_child().props.child.get_child().set_text("")
 
     #add reaction to reactions table
     def add_reaction_to_db(self,caller_obj):

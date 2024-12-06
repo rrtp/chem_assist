@@ -57,7 +57,6 @@ class Application(Gtk.Application):
     #default display
     default_display=Gdk.Display.get_default()
 
-
     current_file_path=__file__
     current_file_dir_parent=os.path.split(os.path.split(current_file_path)[0])[0] #get the parent directory of this file's directory
     if getattr(sys,'frozen',False):

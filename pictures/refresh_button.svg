@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="1467.3988mm"
-   height="1493.2162mm"
-   viewBox="0 0 146.73988 149.32162"
+   width="145.63666mm"
+   height="145.96941mm"
+   viewBox="0 0 14.563666 14.596941"
    version="1.1"
    id="svg1"
    sodipodi:docname="refresh_button.svg"
@@ -26,15 +26,24 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.1424431"
-     inkscape:cx="2773.0371"
-     inkscape:cy="2818.6694"
+     inkscape:zoom="0.67521728"
+     inkscape:cx="-69.607223"
+     inkscape:cy="344.3336"
      inkscape:window-width="1916"
      inkscape:window-height="1030"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg1" />
+     inkscape:current-layer="svg1">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="14.563666"
+       height="14.596942"
+       id="page1"
+       margin="0 0 3.501081"
+       bleed="0" />
+  </sodipodi:namedview>
   <defs
      id="defs1">
     <linearGradient
@@ -54,7 +63,7 @@
   </defs>
   <g
      id="layer1"
-     transform="matrix(0.05840172,0,0,0.05861307,63.738631,51.262817)"
+     transform="matrix(0.08924288,0,0,0.09446396,-1.9488707,-5.1940545)"
      inkscape:export-filename="png/refresh_button.png"
      inkscape:export-xdpi="96"
      inkscape:export-ydpi="96">
