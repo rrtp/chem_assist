@@ -790,7 +790,7 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
     mode="add"
     reaction_information=["","","",""]
     def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs,title="Add reaction to database")
+        super().__init__(*args,**kwargs,title="add/edit reaction")
         header_bar.set_titlebar(header_bar,self)
         #set window mode
         for detail in self.reaction_information:
@@ -821,7 +821,7 @@ class add_reaction_to_db_page(Gtk.ApplicationWindow):
         product_entry.set_placeholder_text("products")
         extra_info_entry.set_placeholder_text("extra info")
 
-        add_button=Gtk.Button.new_with_label("Add reaction to database")
+        add_button=Gtk.Button.new_with_label("add/edit")
         add_button.set_halign(Gtk.Align.CENTER)
 
         #add to main box
