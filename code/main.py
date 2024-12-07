@@ -183,7 +183,8 @@ class Application(Gtk.Application):
         page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
         if len(app.window_history)>1:
             page.set_default_size(app.width,app.height)
-        print(app.width,app.height)
+            print(app.width,app.height)
+
         #show the page to the user
         page.props.maximized=page.is_maximized()
         page.present()
