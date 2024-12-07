@@ -160,11 +160,15 @@ class Application(Gtk.Application):
         self.open_page(None,pages.quiz_main_page)
 
     #close current page
-    def close_page(self,caller_obj=None,page=None):
+    def close_page(self,caller_obj=None,page=None):            
         if page!=None:
+            app.width=app.get_active_window().get_width()
+            app.height=app.get_active_window().get_height()
+            app.maximized=page.is_maximized()
             page.close()
         if page==None and self.get_active_window()!=None:
             self.props.active_window.close()
+
     #open page
     def open_page(app,caller_obj,page):
         app.close_page(page=app.props.active_window)
@@ -183,13 +187,12 @@ class Application(Gtk.Application):
         page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
         if len(app.window_history)>1:
             page.set_default_size(app.width,app.height)
+            page.props.maximized=app.maximized
             print(app.width,app.height)
 
         #show the page to the user
-        page.props.maximized=page.is_maximized()
         page.present()
-        app.width=page.get_width()
-        app.height=page.get_height()
+
     ##appearance
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
