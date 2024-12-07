@@ -76,6 +76,7 @@ class settings_page(Gtk.ApplicationWindow):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs,title="settings")
+
         header_bar.set_titlebar(header_bar,self,settings=False)
 
         ##layout
@@ -348,6 +349,7 @@ class main_menu_page(Gtk.ApplicationWindow):
         main_menu_page_box=Gtk.Box.new(Gtk.Orientation.VERTICAL,0)
         self.set_child(main_menu_page_box)
 
+        self.set_decorated(False)
         #boxes
         #message box
         message_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,0)

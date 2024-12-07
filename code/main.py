@@ -181,7 +181,13 @@ class Application(Gtk.Application):
 
         page=page(application=app)
         page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
-        page.present()    
+        if len(app.window_history)>1:
+            page.set_default_size(app.width,app.height)
+        #show the page to the user
+        page.present()
+        page.props.maximized=page.is_maximized()
+        app.width=page.get_width()
+        app.height=page.get_height()
     ##appearance
     #get monitor dimentions
     def get_monitor_dimentions(self,monitor):
