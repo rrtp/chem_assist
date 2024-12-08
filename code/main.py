@@ -140,6 +140,7 @@ class Application(Gtk.Application):
         self.open_page(None,pages.quiz_main_page)
     #open quiz from quiz module
     def open_quiz(self,caller_action,param):
+        #connect to db
         connect_to_db_return=self.connect_to_db("None","None")
         if connect_to_db_return != True:
             #display error and exit function with return value as false
@@ -153,7 +154,7 @@ class Application(Gtk.Application):
                 self.props.active_window.message_label.set_text("creating database error:"+str(create_db_return))
             return create_db_return
         #hide current window when quiz is open
-        self.close_page(self.props.active_window)
+        self.close_page()
         #open quiz.py quiz page
         quiz.main(self.database_object)
         #reshow current window
@@ -168,7 +169,6 @@ class Application(Gtk.Application):
             page.close()
         if page==None and self.get_active_window()!=None:
             self.props.active_window.close()
-
     #open page
     def open_page(app,caller_obj,page):
         app.close_page(page=app.props.active_window)
@@ -185,10 +185,10 @@ class Application(Gtk.Application):
 
         page=page(application=app)
         page.set_default_size(app.monitor_width/2,int(app.monitor_height/1.5))
+
         if len(app.window_history)>1:
             page.set_default_size(app.width,app.height)
             page.props.maximized=app.maximized
-            print(app.width,app.height)
 
         #show the page to the user
         page.present()
