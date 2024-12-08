@@ -183,7 +183,6 @@ def reset_app():
         user_name = name_entry.get()
         if user_name and user_name.isalpha():
             start_quiz_window(connection, user_name)
-            name_entry.delete(0, tk.END)  # Clear the entry box
         else:
             messagebox.showerror("Error", "Please enter a valid name (only letters).")
 
