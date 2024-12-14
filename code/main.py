@@ -176,8 +176,10 @@ class Application(Gtk.Application):
         app.window_history.append(page)
         app.window_history_size=len(app.window_history)
         #solve back button window loop problem
-        if app.window_history_size > 3 and app.window_history[-1] == app.window_history[-3]:
+        if app.window_history_size > 2 and app.window_history[-1] == app.window_history[-3]:
             app.window_history.pop()
+            app.window_history.pop()
+        if app.window_history_size > 1 and app.window_history[-1] == app.window_history[-2]:
             app.window_history.pop()
         #trim window history if greater than limit
         if app.window_history_size>app.window_history_limit:

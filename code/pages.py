@@ -166,7 +166,7 @@ class settings_page(Gtk.ApplicationWindow):
         db_dir_box=Gtk.Box.new(Gtk.Orientation.HORIZONTAL,10)
         db_dir_box.set_valign(Gtk.Align.START)
 
-        db_dir_label=Gtk.Label.new("Current database directory:")
+        db_dir_label=Gtk.Label.new("Current database name:")
         database_directory_entry_buffer=Gtk.EntryBuffer.new(self.props.application.db_name,-1)
         database_directory_textbox=Gtk.Entry.new_with_buffer(database_directory_entry_buffer)
         database_directory_textbox.set_overwrite_mode(False)
